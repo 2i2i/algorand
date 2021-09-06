@@ -1,0 +1,69 @@
+#pragma version 4
+
+// IF: Single AssetTransfer THEN: Handle Opt-In
+global GroupSize
+int 1
+==
+txn TypeEnum
+int axfer
+==
+&&
+bnz branch_optin
+
+branch_optin:
+// Opt-In Asset Amount is 0
+txn AssetAmount
+int 0
+==
+// Opt-In executed as Auto-AssetTransfer
+txn Sender
+txn AssetReceiver
+==
+&&
+// Opt-In Fee limit
+txn Fee
+int 1000
+<=
+&&
+// Prevent unforseen Asset Clawback
+txn AssetSender
+global ZeroAddress
+==
+&&
+// Prevent Asset Close-To
+txn AssetCloseTo
+global ZeroAddress
+==
+&&
+// Prevent Close-To
+txn CloseRemainderTo
+global ZeroAddress
+==
+&&
+// Prevent Rekey-To
+txn RekeyTo
+global ZeroAddress
+==
+&&
+b end_program
+
+// TEAL to allow payout from escrow
+
+// Check that txn is a payment
+txn TypeEnum
+int pay
+==
+assert
+
+// Check that first transaction is state transaction
+gtxn 0 ApplicationID
+// TODO replace with STATE_APPID
+int 24029953
+==
+assert
+
+b end_program
+
+end_program:
+int 1
+return

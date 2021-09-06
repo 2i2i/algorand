@@ -1,0 +1,443 @@
+#pragma version 4
+
+// Handle each possible OnCompletion type. We don't have to worry about
+// handling ClearState, because the ClearStateProgram will execute in that
+// case, not the ApprovalProgram.
+
+txn OnCompletion
+int NoOp
+==
+bnz handle_noop
+
+txn OnCompletion
+int OptIn
+==
+bnz handle_optin
+
+txn OnCompletion
+int CloseOut
+==
+bnz handle_closeout
+
+txn OnCompletion
+int UpdateApplication
+==
+bnz handle_updateapp
+
+txn OnCompletion
+int DeleteApplication
+==
+bnz handle_deleteapp
+
+// Unexpected OnCompletion value. Should be unreachable.
+b decline
+
+handle_noop:
+// Handle NoOp
+
+// Handle LOCK transaction
+txna ApplicationArgs 0
+byte "LOCK"
+==
+bnz handle_lock
+
+// Handle UNLOCK transaction
+txna ApplicationArgs 0
+byte "UNLOCK"
+==
+bnz handle_unlock
+
+// Handle UNLOCK transaction
+txna ApplicationArgs 0
+byte "CLEAR"
+==
+bnz handle_clear_state
+
+// Unexpected first arg
+b decline
+
+
+// Handle LOCK
+handle_lock:
+
+// Check that this is the first transaction
+txn GroupIndex
+int 0
+==
+assert
+
+// Check that state is not set
+// TODO if account has "receiver" key, ! fails - unelegant solution
+// DEBUG comment out following to test accounts that have "receiver" set
+int 0
+byte "receiver"
+app_local_get
+!
+assert
+
+gtxn 1 TypeEnum
+int pay
+==
+bnz handle_lock_algo
+
+gtxn 1 TypeEnum
+int axfer
+==
+bnz handle_lock_asa
+
+b decline
+
+handle_lock_asa:
+
+// Check that we have an atomic tx with size 2
+global GroupSize
+int 3
+==
+assert
+
+// Check that the second transaction is to our escrow
+gtxn 1 AssetReceiver
+// TODO change to ESCROW_ADDR
+addr 6EU6EKDJFTHWQLRJS32DBYU5OL6WT4WXN7WNQHRIJAEYNBGUIJAZUIVJK4
+==
+assert
+
+// Check that amount is correct
+global MinTxnFee
+int 5
+*
+gtxn 2 Amount
+==
+assert
+
+// Store balance and unit for use in sub
+gtxn 1 AssetAmount
+store 1
+gtxn 1 XferAsset
+store 2
+callsub set_state
+
+b approve
+
+handle_lock_algo:
+
+// Check that we have an atomic tx with size 2
+global GroupSize
+int 2
+==
+assert
+
+// Check that the second transaction is to our escrow
+gtxn 1 Receiver
+// TODO change to ESCROW_ADDR
+addr 6EU6EKDJFTHWQLRJS32DBYU5OL6WT4WXN7WNQHRIJAEYNBGUIJAZUIVJK4
+==
+assert
+
+// Check that amount is enough
+global MinTxnFee
+int 4
+*
+gtxn 1 Amount
+<
+assert
+
+// Store balance and unit for use in sub
+gtxn 1 Amount
+global MinTxnFee
+int 4
+*
+-
+store 1
+gtxn 1 XferAsset
+store 2
+callsub set_state
+
+b approve
+
+set_state:
+
+// Set state speed
+int 0
+byte "speed"
+txna ApplicationArgs 2
+btoi
+app_local_put
+
+// Set state balance
+// TODO need Amount of the other txn
+int 0
+byte "balance"
+load 1
+app_local_put
+
+// Set state balance unit
+int 0
+byte "unit"
+load 2
+app_local_put
+
+// Set state receiver
+int 0
+byte "receiver"
+txn ApplicationArgs 1
+app_local_put
+
+retsub
+
+handle_unlock:
+// Handle UNLOCK
+
+// Only owner can unlock
+txn Sender
+global CreatorAddress
+==
+assert
+
+// Handle normal case: 4 transactions
+global GroupSize
+int 4
+==
+bnz handle_normal_case
+
+// Handle GroupSize == 3
+// TODO
+
+handle_normal_case:
+// Handle normal case (4 transactions)
+
+// Check A has receiver set
+int 1
+int 0
+byte "receiver"
+app_local_get_ex
+assert
+
+// unit == 0 <=> ALGO only transfer
+int 1
+byte "unit"
+app_local_get
+int 0
+==
+bnz handle_unlock_normal_algo
+
+b handle_unlock_normal_asa
+
+handle_unlock_normal_asa:
+
+// Check B transaction receiver == A set receiver
+int 1
+byte "receiver"
+app_local_get
+gtxn 3 AssetReceiver
+==
+assert
+
+// Check that amount is correct
+global MinTxnFee
+gtxn 4 Amount
+==
+assert
+
+// Check amount of A transaction <= locked balance
+gtxn 1 AssetAmount
+int 1
+byte "balance"
+app_local_get
+<=
+assert
+
+// Check amount of B transaction <= locked balance
+gtxn 3 AssetAmount
+int 1
+byte "balance"
+app_local_get
+<=
+assert
+
+// Check that amount of B transaction matches the duration
+// * panics on overflow, so we are safe
+// duration
+txn ApplicationArgs 1
+btoi
+int 1
+byte "speed"
+app_local_get
+*
+// to FEE
+gtxn 2 AssetAmount
+// to B
+gtxn 3 AssetAmount
++
+==
+assert
+
+// Check A + fee + B = balance
+gtxn 1 AssetAmount
+gtxn 2 AssetAmount
+gtxn 3 AssetAmount
++
++
+int 1
+byte "balance"
+app_local_get
+==
+assert
+
+b unlock_cleanup_asa
+
+handle_unlock_normal_algo:
+
+// Check B transaction receiver == A set receiver
+int 1
+byte "receiver"
+app_local_get
+gtxn 3 Receiver
+==
+assert
+
+// Check amount of A transaction <= locked balance
+gtxn 1 Amount
+int 1
+byte "balance"
+app_local_get
+<=
+assert
+
+// Check amount of B transaction <= locked balance
+gtxn 3 Amount
+int 1
+byte "balance"
+app_local_get
+<=
+assert
+
+// Check that amount of B transaction matches the time
+// * panics on overflow, so we are safe
+// duration
+txn ApplicationArgs 1
+btoi
+int 1
+byte "speed"
+app_local_get
+*
+// to FEE
+gtxn 2 Amount
+// MinTxnFee is sent to FEE to cover owner txn cost
+global MinTxnFee
+-
+// to B
+gtxn 3 Amount
++
+==
+assert
+
+int 1
+return
+
+// Check A + fee + B = balance
+gtxn 1 Amount
+gtxn 2 Amount
+global MinTxnFee
+-
+gtxn 3 Amount
++
++
+int 1
+byte "balance"
+app_local_get
+==
+assert
+
+b unlock_cleanup_algo
+
+// Cleanup
+unlock_cleanup_algo:
+gtxn 1 Receiver
+byte "receiver"
+app_local_del
+
+gtxn 1 Receiver
+byte "speed"
+app_local_del
+
+gtxn 1 Receiver
+byte "balance"
+app_local_del
+
+gtxn 1 Receiver
+byte "unit"
+app_local_del
+
+b approve
+
+unlock_cleanup_asa:
+gtxn 1 AssetReceiver
+byte "receiver"
+app_local_del
+
+gtxn 1 AssetReceiver
+byte "speed"
+app_local_del
+
+gtxn 1 AssetReceiver
+byte "balance"
+app_local_del
+
+gtxn 1 AssetReceiver
+byte "unit"
+app_local_del
+
+b approve
+
+handle_clear_state:
+txn Sender
+byte "receiver"
+app_local_del
+
+txn Sender
+byte "speed"
+app_local_del
+
+txn Sender
+byte "balance"
+app_local_del
+
+txn Sender
+byte "unit"
+app_local_del
+
+b approve
+
+// Handle OptIn
+handle_optin:
+b approve
+
+///////////////
+// // Update only by creator - for now
+// // TODO maybe make updating impossible for safety and assurance
+handle_updateapp:
+
+global GroupSize
+int 1
+==
+global CreatorAddress
+txn Sender
+==
+&&
+return
+
+// Handle CloseOut
+handle_closeout:
+// Cannot delete app
+handle_deleteapp:
+// Decline
+handle_decline:
+b decline
+
+decline:
+err
+
+approve:
+int 1
+return
