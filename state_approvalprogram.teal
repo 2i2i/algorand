@@ -70,8 +70,9 @@ assert
 // TODO if account has "receiver" key, ! fails - unelegant solution
 // DEBUG comment out following to test accounts that have "receiver" set
 int 0
+int 0
 byte "receiver"
-app_local_get
+app_local_get_ex
 !
 assert
 
@@ -331,9 +332,6 @@ gtxn 3 Amount
 +
 ==
 assert
-
-int 1
-return
 
 // Check A + fee + B = balance
 gtxn 1 Amount
