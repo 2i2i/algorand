@@ -9,7 +9,7 @@ const uint8ArrayListFromStringList = (stringList) => {
   return uint8ArrayList;
 }
 
-const main_not_working = () => {
+const main_now_working = () => {
   // accounts
   const ownerMnemonic = "...";
   const accountOwner = algosdk.mnemonicToSecretKey(ownerMnemonic);
@@ -81,8 +81,8 @@ const main_not_working = () => {
   // send - gives ERROR: TypeError: Array elements must be byte arrays\n    at new SendRawTransaction
   const { txId } = await algodclient.sendRawTransaction([
     stateTxnSigned,
-    ATxnSigned,
-    feeTxnSigned,
-    BTxnSigned,
+    ATxnSigned.blob,
+    feeTxnSigned.blob,
+    BTxnSigned.blob,
   ]).do();
 }
