@@ -91,14 +91,14 @@ app_local_get_ex
 assert
 
 // locking ALGO?
-gtxn 1 TypeEnum
-int pay
+global GroupSize
+int 2
 ==
 bnz handle_lock_algo
 
 // locking ASA?
-gtxn 1 TypeEnum
-int axfer
+global GroupSize
+int 3
 ==
 bnz handle_lock_asa
 
@@ -110,12 +110,6 @@ b decline
 ////////////////
 // case lock ALGO
 handle_lock_algo:
-
-// Check that we have an atomic tx with size 2
-global GroupSize
-int 2
-==
-assert
 
 // Check that the second txn is to our escrow
 gtxn 1 Receiver
@@ -144,9 +138,7 @@ int 4
 store 1
 gtxn 1 XferAsset
 store 2
-callsub set_state
-
-b approve
+b set_state
 ////////////////
 
 
@@ -154,14 +146,17 @@ b approve
 // lock ASA case
 handle_lock_asa:
 
-// Check that we have an atomic tx with size 3
-global GroupSize
-int 3
+// Check that the second txn is to our ESCROW
+gtxn 1 Receiver
+// TODO change to $ESCROW (whenver it changes)
+// btw, we have a circular change - when ESCROW changes, we need to change STATE, which needs an ESCROW change, etc.
+// it works bc STATE (this) can be *updated* without changing its id
+addr 6EU6EKDJFTHWQLRJS32DBYU5OL6WT4WXN7WNQHRIJAEYNBGUIJAZUIVJK4
 ==
 assert
 
-// Check that the second txn is to our escrow
-gtxn 1 AssetReceiver
+// Check that the third txn is to ESCROW
+gtxn 2 AssetReceiver
 // TODO change to $ESCROW (whenver it changes)
 // btw, we have a circular change - when ESCROW changes, we need to change STATE, which needs an ESCROW change, etc.
 // it works bc STATE (this) can be *updated* without changing its id
@@ -173,19 +168,17 @@ assert
 global MinTxnFee
 int 5
 *
-gtxn 2 Amount
+gtxn 1 Amount
 ==
 assert
 
 // Store energy and assetid for use in sub 'set_state'
 // energy stored is amount sent minus txn fees required
-gtxn 1 AssetAmount
+gtxn 2 AssetAmount
 store 1
-gtxn 1 XferAsset
+gtxn 2 XferAsset
 store 2
-callsub set_state
-
-b approve
+b set_state
 ////////////////
 
 
@@ -219,7 +212,7 @@ byte "B"
 txn ApplicationArgs 1
 app_local_put
 
-retsub
+b approve
 ////////////////
 
 
@@ -238,13 +231,6 @@ handle_unlock:
 txn Sender
 global CreatorAddress
 ==
-assert
-
-// check A has B set
-int 1
-int 0
-byte "B"
-app_local_get_ex
 assert
 
 // assetid == 0 <=> ALGO only transfer
@@ -269,27 +255,40 @@ handle_unlock_algo:
 int 1
 byte "B"
 app_local_get
-gtxn 3 Receiver
+gtxn 2 Receiver
 ==
 assert
 
-// Check amount of A txn <= locked energy
-gtxn 1 Amount
-int 1
-byte "energy"
-app_local_get
-<=
-assert
-
 // Check amount of B txn <= locked energy
-gtxn 3 Amount
+gtxn 2 Amount
 int 1
 byte "energy"
 app_local_get
 <=
 assert
 
-// Check that amount of B txn matches the time
+
+// handle 2 cases
+// case: txn for A + B
+global GroupSize
+int 4
+==
+bnz handle_unlock_algo_AB
+
+// case: no txn for A
+global GroupSize
+int 3
+==
+bnz handle_unlock_algo_B
+
+// wrong case
+b decline
+
+
+// case: txn for A + B
+handle_unlock_algo_AB:
+
+// Check that amount of B txn matches the duration*speed
 // * panics on overflow, so we are safe
 // txn ApplicationArgs 1 = duration
 txn ApplicationArgs 1
@@ -299,22 +298,30 @@ byte "speed"
 app_local_get
 *
 // to FEE
-gtxn 2 Amount
+gtxn 1 Amount
 // MinTxnFee is sent to FEE to cover owner txn cost
 global MinTxnFee
 -
 // to B
-gtxn 3 Amount
+gtxn 2 Amount
 +
 ==
 assert
 
-// Check A + fee + B = energy
+// Check amount of A txn <= locked energy
+gtxn 3 Amount
+int 1
+byte "energy"
+app_local_get
+<=
+assert
+
+// Check A + FEE + B = energy
+gtxn 3 Amount
 gtxn 1 Amount
-gtxn 2 Amount
 global MinTxnFee
 -
-gtxn 3 Amount
+gtxn 2 Amount
 +
 +
 int 1
@@ -323,8 +330,28 @@ app_local_get
 ==
 assert
 
-b unlock_cleanup_algo
+b unlock_unset_state
+
+// case: no txn for A
+handle_unlock_algo_B:
+
+// Check FEE + B = energy
+gtxn 1 Amount
+global MinTxnFee
+-
+gtxn 2 Amount
++
+int 1
+byte "energy"
+app_local_get
+==
+assert
+
+b unlock_unset_state
 ////////////////
+
+
+
 
 
 ////////////////
@@ -335,33 +362,46 @@ handle_unlock_asa:
 int 1
 byte "B"
 app_local_get
-gtxn 3 AssetReceiver
+gtxn 2 AssetReceiver
 ==
 assert
 
 // Check that amount is correct
 global MinTxnFee
-gtxn 4 Amount
+gtxn 3 Amount
 ==
 assert
 
-// Check amount of A txn <= locked energy
-gtxn 1 AssetAmount
-int 1
-byte "energy"
-app_local_get
-<=
-assert
-
 // Check amount of B txn <= locked energy
-gtxn 3 AssetAmount
+gtxn 2 AssetAmount
 int 1
 byte "energy"
 app_local_get
 <=
 assert
 
-// Check that amount of B txn matches the time
+
+// handle 2 cases
+// case: txn for A + B
+global GroupSize
+int 5
+==
+bnz handle_unlock_asa_AB
+
+// case: no txn for A
+global GroupSize
+int 4
+==
+bnz handle_unlock_asa_B
+
+// wrong case
+b decline
+
+
+// case: txn for A + B
+handle_unlock_asa_AB:
+
+// Check that amount of B txn matches the duration*speed
 // * panics on overflow, so we are safe
 // txn ApplicationArgs 1 = duration
 txn ApplicationArgs 1
@@ -371,17 +411,25 @@ byte "speed"
 app_local_get
 *
 // to FEE
-gtxn 2 AssetAmount
+gtxn 1 AssetAmount
 // to B
-gtxn 3 AssetAmount
+gtxn 2 AssetAmount
 +
 ==
 assert
 
-// Check A + fee + B = energy
+// Check amount of A txn <= locked energy
+gtxn 4 AssetAmount
+int 1
+byte "energy"
+app_local_get
+<=
+assert
+
+// Check A + FEE + B = energy
+gtxn 4 AssetAmount
 gtxn 1 AssetAmount
 gtxn 2 AssetAmount
-gtxn 3 AssetAmount
 +
 +
 int 1
@@ -390,46 +438,42 @@ app_local_get
 ==
 assert
 
-b unlock_cleanup_asa
+b unlock_unset_state
+
+// case: no txn for A
+handle_unlock_asa_B:
+
+// Check FEE + B = energy
+gtxn 1 AssetAmount
+gtxn 2 AssetAmount
++
+int 1
+byte "energy"
+app_local_get
+==
+assert
+
+b unlock_unset_state
 ////////////////
 
 
 
 ////////////////
 // Cleanup
-unlock_cleanup_algo:
-gtxn 1 Receiver
+unlock_unset_state:
+int 1
 byte "B"
 app_local_del
 
-gtxn 1 Receiver
+int 1
 byte "speed"
 app_local_del
 
-gtxn 1 Receiver
+int 1
 byte "energy"
 app_local_del
 
-gtxn 1 Receiver
-byte "assetid"
-app_local_del
-
-b approve
-
-unlock_cleanup_asa:
-gtxn 1 AssetReceiver
-byte "B"
-app_local_del
-
-gtxn 1 AssetReceiver
-byte "speed"
-app_local_del
-
-gtxn 1 AssetReceiver
-byte "energy"
-app_local_del
-
-gtxn 1 AssetReceiver
+int 1
 byte "assetid"
 app_local_del
 
@@ -440,25 +484,25 @@ b approve
 
 ////////////////
 // for debugging only - useful to clear local state
-// handle_clear_state:
+handle_clear_state:
 
-// txn Sender
-// byte "B"
-// app_local_del
+txn Sender
+byte "B"
+app_local_del
 
-// txn Sender
-// byte "speed"
-// app_local_del
+txn Sender
+byte "speed"
+app_local_del
 
-// txn Sender
-// byte "energy"
-// app_local_del
+txn Sender
+byte "energy"
+app_local_del
 
-// txn Sender
-// byte "assetid"
-// app_local_del
+txn Sender
+byte "assetid"
+app_local_del
 
-// b approve
+b approve
 ////////////////
 
 
@@ -505,4 +549,11 @@ err
 approve:
 int 1
 return
+////////////////
+
+
+////////////////
+// fyi
+// Txn.Accounts[0] is sender of txn
+// Txn.Apps[0] is own app
 ////////////////

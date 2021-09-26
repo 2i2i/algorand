@@ -76,6 +76,12 @@ goal account balance -a $ESCROW
 goal account info -a $ESCROW
 goal app read --app-id=$STATE --local --from=$A
 
+
+/////////
+// Clear state
+goal app call --from=$A --app-id=$STATE --app-arg="str:CLEAR" -w $WALLET
+/////////
+
 // debugging - not really working
 goal clerk dryrun -t $TXNS_DIR/signout.txn
 goal clerk dryrun -t $TXNS_DIR/signout.txn --dryrun-dump  -o $TXNS_DIR/dr.json
