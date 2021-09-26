@@ -1,5 +1,8 @@
 #pragma version 4
 
+//////////////
+// opt in
+
 // IF: Single AssetTransfer THEN: Handle Opt-In
 global GroupSize
 int 1
@@ -45,8 +48,9 @@ txn RekeyTo
 global ZeroAddress
 ==
 &&
-b end_program
+b approve
 
+//////////////
 // TEAL to allow payout from escrow
 
 // Check that txn is a payment
@@ -55,15 +59,17 @@ int pay
 ==
 assert
 
-// Check that first transaction is state transaction
+// Check that first transaction is state dapp txn
 gtxn 0 ApplicationID
-// TODO replace with STATE_APPID
+// TODO always replace with $STATE (whenever changed)
 int 24029953
 ==
 assert
 
-b end_program
+b approve
 
-end_program:
+//////////////
+// end branches
+approve:
 int 1
 return

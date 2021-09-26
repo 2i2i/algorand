@@ -76,7 +76,7 @@ goal account balance -a $ESCROW
 goal account info -a $ESCROW
 goal app read --app-id=$STATE --local --from=$A
 
-// debugging
+// debugging - not really working
 goal clerk dryrun -t $TXNS_DIR/signout.txn
 goal clerk dryrun -t $TXNS_DIR/signout.txn --dryrun-dump  -o $TXNS_DIR/dr.json
-tealdbg debug $TXNS_DIR/state_approvalprogram.teal -d $TXNS_DIR/dr.msgp --group-index 0
+tealdbg debug $CODE_DIR/state_approvalprogram.teal -d $TXNS_DIR/dr.msgp --group-index 0

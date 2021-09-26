@@ -2,4 +2,5 @@
 *.tok
 *.rej
 *.sig
+*.json
 splitfiles*
