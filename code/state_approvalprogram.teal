@@ -67,11 +67,11 @@ int 0
 assert
 
 // Check that state is not set
-// TODO if account has "receiver" key, ! fails - unelegant solution
-// DEBUG comment out following to test accounts that have "receiver" set
+// TODO if account has "B" key, ! fails - unelegant solution
+// DEBUG comment out following to test accounts that have "B" set
 int 0
 int 0
-byte "receiver"
+byte "B"
 app_local_get_ex
 !
 assert
@@ -111,7 +111,7 @@ gtxn 2 Amount
 ==
 assert
 
-// Store budget and assetid for use in sub
+// Store energy and assetid for use in sub
 gtxn 1 AssetAmount
 store 1
 gtxn 1 XferAsset
@@ -143,7 +143,7 @@ gtxn 1 Amount
 <
 assert
 
-// Store budget and assetid for use in sub
+// Store energy and assetid for use in sub
 gtxn 1 Amount
 global MinTxnFee
 int 4
@@ -165,22 +165,22 @@ txna ApplicationArgs 2
 btoi
 app_local_put
 
-// Set state budget
+// Set state energy
 // TODO need Amount of the other txn
 int 0
-byte "budget"
+byte "energy"
 load 1
 app_local_put
 
-// Set state budget assetid
+// Set state energy assetid
 int 0
 byte "assetid"
 load 2
 app_local_put
 
-// Set state receiver
+// Set state B
 int 0
-byte "receiver"
+byte "B"
 txn ApplicationArgs 1
 app_local_put
 
@@ -207,10 +207,10 @@ bnz handle_normal_case
 handle_normal_case:
 // Handle normal case (4 transactions)
 
-// Check A has receiver set
+// Check A has B set
 int 1
 int 0
-byte "receiver"
+byte "B"
 app_local_get_ex
 assert
 
@@ -226,9 +226,9 @@ b handle_unlock_normal_asa
 
 handle_unlock_normal_asa:
 
-// Check B transaction receiver == A set receiver
+// Check B transaction receiver == A set B
 int 1
-byte "receiver"
+byte "B"
 app_local_get
 gtxn 3 AssetReceiver
 ==
@@ -240,18 +240,18 @@ gtxn 4 Amount
 ==
 assert
 
-// Check amount of A transaction <= locked budget
+// Check amount of A transaction <= locked energy
 gtxn 1 AssetAmount
 int 1
-byte "budget"
+byte "energy"
 app_local_get
 <=
 assert
 
-// Check amount of B transaction <= locked budget
+// Check amount of B transaction <= locked energy
 gtxn 3 AssetAmount
 int 1
-byte "budget"
+byte "energy"
 app_local_get
 <=
 assert
@@ -273,14 +273,14 @@ gtxn 3 AssetAmount
 ==
 assert
 
-// Check A + fee + B = budget
+// Check A + fee + B = energy
 gtxn 1 AssetAmount
 gtxn 2 AssetAmount
 gtxn 3 AssetAmount
 +
 +
 int 1
-byte "budget"
+byte "energy"
 app_local_get
 ==
 assert
@@ -289,26 +289,26 @@ b unlock_cleanup_asa
 
 handle_unlock_normal_algo:
 
-// Check B transaction receiver == A set receiver
+// Check B transaction receiver == A set B
 int 1
-byte "receiver"
+byte "B"
 app_local_get
 gtxn 3 Receiver
 ==
 assert
 
-// Check amount of A transaction <= locked budget
+// Check amount of A transaction <= locked energy
 gtxn 1 Amount
 int 1
-byte "budget"
+byte "energy"
 app_local_get
 <=
 assert
 
-// Check amount of B transaction <= locked budget
+// Check amount of B transaction <= locked energy
 gtxn 3 Amount
 int 1
-byte "budget"
+byte "energy"
 app_local_get
 <=
 assert
@@ -333,7 +333,7 @@ gtxn 3 Amount
 ==
 assert
 
-// Check A + fee + B = budget
+// Check A + fee + B = energy
 gtxn 1 Amount
 gtxn 2 Amount
 global MinTxnFee
@@ -342,7 +342,7 @@ gtxn 3 Amount
 +
 +
 int 1
-byte "budget"
+byte "energy"
 app_local_get
 ==
 assert
@@ -352,7 +352,7 @@ b unlock_cleanup_algo
 // Cleanup
 unlock_cleanup_algo:
 gtxn 1 Receiver
-byte "receiver"
+byte "B"
 app_local_del
 
 gtxn 1 Receiver
@@ -360,7 +360,7 @@ byte "speed"
 app_local_del
 
 gtxn 1 Receiver
-byte "budget"
+byte "energy"
 app_local_del
 
 gtxn 1 Receiver
@@ -371,7 +371,7 @@ b approve
 
 unlock_cleanup_asa:
 gtxn 1 AssetReceiver
-byte "receiver"
+byte "B"
 app_local_del
 
 gtxn 1 AssetReceiver
@@ -379,7 +379,7 @@ byte "speed"
 app_local_del
 
 gtxn 1 AssetReceiver
-byte "budget"
+byte "energy"
 app_local_del
 
 gtxn 1 AssetReceiver
@@ -390,7 +390,7 @@ b approve
 
 handle_clear_state:
 txn Sender
-byte "receiver"
+byte "B"
 app_local_del
 
 txn Sender
@@ -398,7 +398,7 @@ byte "speed"
 app_local_del
 
 txn Sender
-byte "budget"
+byte "energy"
 app_local_del
 
 txn Sender
