@@ -53,11 +53,11 @@ goal clerk rawsend --filename $TXNS_DIR/signout.txn
 
 // step 2: UNLOCK
 goal app call --from=$OWNER --app-id=$STATE --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --app-arg="int:$DURATION" --out=$TXNS_DIR/state.txn -w $WALLET
+goal clerk send --from-program $CODE_DIR/escrow.teal --to=$FEE --amount=$UNLOCK_FEE --out=$TXNS_DIR/fee_algo.txn
 goal asset send --from $ESCROW --to=$FEE --assetid=$ASA --amount=$ENERGY_FEE --out=$TXNS_DIR/fee_asa.txn
 goal asset send --from $ESCROW --to=$B --assetid=$ASA --amount=$ENERGY_B --out=$TXNS_DIR/B.txn
-goal clerk send --from-program $CODE_DIR/escrow.teal --to=$FEE --amount=$UNLOCK_FEE --out=$TXNS_DIR/fee_algo.txn
 goal asset send --from $ESCROW --to=$A --assetid=$ASA --amount=$ENERGY_A --out=$TXNS_DIR/A.txn
-cat $TXNS_DIR/state.txn $TXNS_DIR/fee_asa.txn $TXNS_DIR/B.txn $TXNS_DIR/fee_algo.txn $TXNS_DIR/A.txn > $TXNS_DIR/combinedtransactions.txn
+cat $TXNS_DIR/state.txn $TXNS_DIR/fee_algo.txn $TXNS_DIR/fee_asa.txn $TXNS_DIR/B.txn $TXNS_DIR/A.txn > $TXNS_DIR/combinedtransactions.txn
 goal clerk group --infile $TXNS_DIR/combinedtransactions.txn --outfile $TXNS_DIR/groupedtransactions.txn
 goal clerk split --infile $TXNS_DIR/groupedtransactions.txn --outfile $TXNS_DIR/splitfiles
 goal clerk sign --infile $TXNS_DIR/splitfiles-0 --outfile $TXNS_DIR/splitfiles-0.sig -w $WALLET
@@ -70,10 +70,10 @@ goal clerk rawsend --filename $TXNS_DIR/signout.txn
 
 // step 2B: UNLOCK + A gets nothing
 goal app call --from=$OWNER --app-id=$STATE --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --out=$TXNS_DIR/state.txn -w $WALLET
+goal clerk send --from-program $CODE_DIR/escrow.teal --to=$FEE --amount=$UNLOCK_FEE --out=$TXNS_DIR/fee_algo.txn
 goal asset send --from $ESCROW --to=$FEE --assetid=$ASA --amount=$ENERGY_FEE --out=$TXNS_DIR/fee_asa.txn
 goal asset send --from $ESCROW --to=$B --assetid=$ASA --amount=$ENERGY_B --out=$TXNS_DIR/B.txn
-goal clerk send --from-program $CODE_DIR/escrow.teal --to=$FEE --amount=$UNLOCK_FEE --out=$TXNS_DIR/fee_algo.txn
-cat $TXNS_DIR/state.txn $TXNS_DIR/fee_asa.txn $TXNS_DIR/B.txn $TXNS_DIR/fee_algo.txn > $TXNS_DIR/combinedtransactions.txn
+cat $TXNS_DIR/state.txn $TXNS_DIR/fee_algo.txn $TXNS_DIR/fee_asa.txn $TXNS_DIR/B.txn > $TXNS_DIR/combinedtransactions.txn
 goal clerk group --infile $TXNS_DIR/combinedtransactions.txn --outfile $TXNS_DIR/groupedtransactions.txn
 goal clerk split --infile $TXNS_DIR/groupedtransactions.txn --outfile $TXNS_DIR/splitfiles
 goal clerk sign --infile $TXNS_DIR/splitfiles-0 --outfile $TXNS_DIR/splitfiles-0.sig -w $WALLET

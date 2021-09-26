@@ -362,18 +362,18 @@ handle_unlock_asa:
 int 1
 byte "B"
 app_local_get
-gtxn 2 AssetReceiver
+gtxn 3 AssetReceiver
 ==
 assert
 
-// Check that amount is correct
+// Check that amount of ALGO txn is correct
 global MinTxnFee
-gtxn 3 Amount
+gtxn 1 Amount
 ==
 assert
 
 // Check amount of B txn <= locked energy
-gtxn 2 AssetAmount
+gtxn 3 AssetAmount
 int 1
 byte "energy"
 app_local_get
@@ -411,9 +411,9 @@ byte "speed"
 app_local_get
 *
 // to FEE
-gtxn 1 AssetAmount
-// to B
 gtxn 2 AssetAmount
+// to B
+gtxn 3 AssetAmount
 +
 ==
 assert
@@ -428,8 +428,8 @@ assert
 
 // Check A + FEE + B = energy
 gtxn 4 AssetAmount
-gtxn 1 AssetAmount
 gtxn 2 AssetAmount
+gtxn 3 AssetAmount
 +
 +
 int 1
@@ -444,8 +444,8 @@ b unlock_unset_state
 handle_unlock_asa_B:
 
 // Check FEE + B = energy
-gtxn 1 AssetAmount
 gtxn 2 AssetAmount
+gtxn 3 AssetAmount
 +
 int 1
 byte "energy"
