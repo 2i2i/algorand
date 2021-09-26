@@ -26,15 +26,15 @@ goal clerk rawsend --filename signout.txn
 /////////
 
 // step 1: LOCK
-goal app call --from=$A --app-id=$STATE --app-arg="str:LOCK" --app-arg="addr:$B" --app-arg="int:30" --out=state.txn -w test
-goal clerk send --from=$A --to=$ESCROW --amount=$((4000+200)) --out=lock.txn -w test
+goal app call --from=$A --app-id=$STATE --app-arg="str:LOCK" --app-arg="addr:$B" --app-arg="int:$SPEED" --out=state.txn -w test
+goal clerk send --from=$A --to=$ESCROW --amount=$((4000+$BUDGET)) --out=lock.txn -w test
 cat state.txn lock.txn > combinedtransactions.txn
 goal clerk group --infile combinedtransactions.txn --outfile groupedtransactions.txn
 goal clerk sign --infile groupedtransactions.txn --outfile signout.txn -w test
 goal clerk rawsend --filename signout.txn
 
 // step 2: UNLOCK
-goal app call --from=$OWNER --app-id=$STATE --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --app-arg="int:$TIME" --out=state.txn -w test
+goal app call --from=$OWNER --app-id=$STATE --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --app-arg="int:$DURATION" --out=state.txn -w test
 goal clerk send --from-program escrow.teal --to=$A --amount=50 --out=A.txn
 goal clerk send --from-program escrow.teal --to=$FEE --amount=$((1000+15)) --out=fee.txn
 goal clerk send --from-program escrow.teal --to=$B --amount=135 --out=B.txn
@@ -55,8 +55,8 @@ tealdbg debug state_approvalprogram.teal -d dr.msgp --group-index 0
 /////////
 
 // step 1: LOCK - A does this
-goal app call --from=$A --app-id=$STATE --app-arg="str:LOCK" --app-arg="addr:$B" --app-arg="int:30" --out=state.txn -w test
-goal asset send --assetid=$ASA --from=$A --to=$ESCROW --amount=200 --out=lock_asa.txn -w test
+goal app call --from=$A --app-id=$STATE --app-arg="str:LOCK" --app-arg="addr:$B" --app-arg="int:$SPEED" --out=state.txn -w test
+goal asset send --assetid=$ASA --from=$A --to=$ESCROW --amount=$BUDGET --out=lock_asa.txn -w test
 goal clerk send --from=$A --to=$ESCROW --amount=5000 --out=lock_algo.txn -w test
 cat state.txn lock_asa.txn lock_algo.txn > combinedtransactions.txn
 goal clerk group --infile combinedtransactions.txn --outfile groupedtransactions.txn
@@ -64,11 +64,11 @@ goal clerk sign --infile groupedtransactions.txn --outfile signout.txn -w test
 goal clerk rawsend --filename signout.txn
 
 // step 2: UNLOCK
-goal app call --from=$OWNER --app-id=$STATE --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --app-arg="int:$TIME" --out=state.txn -w test
-goal asset send --from $ESCROW --to=$A --assetid=$ASA --amount=50 --out=A.txn
+goal app call --from=$OWNER --app-id=$STATE --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --app-arg="int:$DURATION" --out=state.txn -w test
+goal asset send --from $ESCROW --to=$A --assetid=$ASA --amount=7 --out=A.txn
 // TODO send something back to A if less transactions occurred
-goal asset send --from $ESCROW --to=$FEE --assetid=$ASA --amount=15 --out=fee_asa.txn
-goal asset send --from $ESCROW --to=$B --assetid=$ASA --amount=135 --out=B.txn
+goal asset send --from $ESCROW --to=$FEE --assetid=$ASA --amount=1 --out=fee_asa.txn
+goal asset send --from $ESCROW --to=$B --assetid=$ASA --amount=78 --out=B.txn
 goal clerk send --from-program escrow.teal --to=$FEE --amount=1000 --out=fee_algo.txn
 cat state.txn A.txn fee_asa.txn B.txn fee_algo.txn > combinedtransactions.txn
 goal clerk group --infile combinedtransactions.txn --outfile groupedtransactions.txn

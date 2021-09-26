@@ -111,7 +111,7 @@ gtxn 2 Amount
 ==
 assert
 
-// Store balance and unit for use in sub
+// Store budget and assetid for use in sub
 gtxn 1 AssetAmount
 store 1
 gtxn 1 XferAsset
@@ -143,7 +143,7 @@ gtxn 1 Amount
 <
 assert
 
-// Store balance and unit for use in sub
+// Store budget and assetid for use in sub
 gtxn 1 Amount
 global MinTxnFee
 int 4
@@ -165,16 +165,16 @@ txna ApplicationArgs 2
 btoi
 app_local_put
 
-// Set state balance
+// Set state budget
 // TODO need Amount of the other txn
 int 0
-byte "balance"
+byte "budget"
 load 1
 app_local_put
 
-// Set state balance unit
+// Set state budget assetid
 int 0
-byte "unit"
+byte "assetid"
 load 2
 app_local_put
 
@@ -214,9 +214,9 @@ byte "receiver"
 app_local_get_ex
 assert
 
-// unit == 0 <=> ALGO only transfer
+// assetid == 0 <=> ALGO only transfer
 int 1
-byte "unit"
+byte "assetid"
 app_local_get
 int 0
 ==
@@ -240,18 +240,18 @@ gtxn 4 Amount
 ==
 assert
 
-// Check amount of A transaction <= locked balance
+// Check amount of A transaction <= locked budget
 gtxn 1 AssetAmount
 int 1
-byte "balance"
+byte "budget"
 app_local_get
 <=
 assert
 
-// Check amount of B transaction <= locked balance
+// Check amount of B transaction <= locked budget
 gtxn 3 AssetAmount
 int 1
-byte "balance"
+byte "budget"
 app_local_get
 <=
 assert
@@ -273,14 +273,14 @@ gtxn 3 AssetAmount
 ==
 assert
 
-// Check A + fee + B = balance
+// Check A + fee + B = budget
 gtxn 1 AssetAmount
 gtxn 2 AssetAmount
 gtxn 3 AssetAmount
 +
 +
 int 1
-byte "balance"
+byte "budget"
 app_local_get
 ==
 assert
@@ -297,18 +297,18 @@ gtxn 3 Receiver
 ==
 assert
 
-// Check amount of A transaction <= locked balance
+// Check amount of A transaction <= locked budget
 gtxn 1 Amount
 int 1
-byte "balance"
+byte "budget"
 app_local_get
 <=
 assert
 
-// Check amount of B transaction <= locked balance
+// Check amount of B transaction <= locked budget
 gtxn 3 Amount
 int 1
-byte "balance"
+byte "budget"
 app_local_get
 <=
 assert
@@ -333,7 +333,7 @@ gtxn 3 Amount
 ==
 assert
 
-// Check A + fee + B = balance
+// Check A + fee + B = budget
 gtxn 1 Amount
 gtxn 2 Amount
 global MinTxnFee
@@ -342,7 +342,7 @@ gtxn 3 Amount
 +
 +
 int 1
-byte "balance"
+byte "budget"
 app_local_get
 ==
 assert
@@ -360,11 +360,11 @@ byte "speed"
 app_local_del
 
 gtxn 1 Receiver
-byte "balance"
+byte "budget"
 app_local_del
 
 gtxn 1 Receiver
-byte "unit"
+byte "assetid"
 app_local_del
 
 b approve
@@ -379,11 +379,11 @@ byte "speed"
 app_local_del
 
 gtxn 1 AssetReceiver
-byte "balance"
+byte "budget"
 app_local_del
 
 gtxn 1 AssetReceiver
-byte "unit"
+byte "assetid"
 app_local_del
 
 b approve
@@ -398,11 +398,11 @@ byte "speed"
 app_local_del
 
 txn Sender
-byte "balance"
+byte "budget"
 app_local_del
 
 txn Sender
-byte "unit"
+byte "assetid"
 app_local_del
 
 b approve

@@ -1,8 +1,8 @@
 // local state schema
 speed: uint64
-balance: uint64
-unit: uint64 // 0 if ALGO
-time: uint64
+budget: uint64
+assetid: uint64 // 0 if ALGO
+duration: uint64
 receiver: byte
 
 export ALGORAND_DATA="$HOME/node/testnetdata"
@@ -13,7 +13,9 @@ export B=RMKUQNJ7KGMRWANBQ3KNHEKWNI7EA7ESWV3DOB7XMTG7DMP3LPDCI4FUNI
 export STATE=24029953
 export ESCROW=6EU6EKDJFTHWQLRJS32DBYU5OL6WT4WXN7WNQHRIJAEYNBGUIJAZUIVJK4
 export ASA=23828034
-export TIME=5
+export DURATION=4
+export SPEED=2
+export BUDGET=86
 
 goal node status
 
