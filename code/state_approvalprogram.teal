@@ -116,7 +116,7 @@ gtxn 1 Receiver
 // TODO change to $ESCROW (whenver it changes)
 // btw, we have a circular change - when ESCROW changes, we need to change STATE, which needs an ESCROW change, etc.
 // it works bc STATE (this) can be *updated* without changing its id
-addr 6EU6EKDJFTHWQLRJS32DBYU5OL6WT4WXN7WNQHRIJAEYNBGUIJAZUIVJK4
+addr FZSBSTE7UUHUCQFRPVZICEJGYCXOAUM3GRAY5UERUAKI45T2ZIWQFYHDIA
 ==
 assert
 
@@ -151,7 +151,7 @@ gtxn 1 Receiver
 // TODO change to $ESCROW (whenver it changes)
 // btw, we have a circular change - when ESCROW changes, we need to change STATE, which needs an ESCROW change, etc.
 // it works bc STATE (this) can be *updated* without changing its id
-addr 6EU6EKDJFTHWQLRJS32DBYU5OL6WT4WXN7WNQHRIJAEYNBGUIJAZUIVJK4
+addr FZSBSTE7UUHUCQFRPVZICEJGYCXOAUM3GRAY5UERUAKI45T2ZIWQFYHDIA
 ==
 assert
 
@@ -160,7 +160,7 @@ gtxn 2 AssetReceiver
 // TODO change to $ESCROW (whenver it changes)
 // btw, we have a circular change - when ESCROW changes, we need to change STATE, which needs an ESCROW change, etc.
 // it works bc STATE (this) can be *updated* without changing its id
-addr 6EU6EKDJFTHWQLRJS32DBYU5OL6WT4WXN7WNQHRIJAEYNBGUIJAZUIVJK4
+addr FZSBSTE7UUHUCQFRPVZICEJGYCXOAUM3GRAY5UERUAKI45T2ZIWQFYHDIA
 ==
 assert
 

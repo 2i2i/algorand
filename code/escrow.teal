@@ -62,7 +62,7 @@ assert
 // Check that first transaction is state dapp txn
 gtxn 0 ApplicationID
 // TODO always replace with $STATE (whenever changed)
-int 24029953
+int 29146267
 ==
 assert
 

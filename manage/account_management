@@ -7,32 +7,31 @@ B: byte // receiver of energy
 
 // set env vars for terminal
 export ALGORAND_DATA="$HOME/node/testnetdata"
-export WALLET=test
+export WALLET=2i2i_testnet
 export CODE_DIR=./code
 export TXNS_DIR=./txns
-export OWNER=YAVXHYBX7ILFZZ2PP5S5LAKU77R2NZOYBS2GBCNE3NMGS66Y44AOIA6BO4
-export FEE=OU63ZTRQ52BLI4L2APIB42W4AVUSIA52CPOC662T5YKTGQ5XKCE5UMI5RE
-export A=LKVLY3J72YUVFPPK344652Y7MQH6LADUTK7XZFW6S2WRRCJIFBY6LLPX2I
-export B=RMKUQNJ7KGMRWANBQ3KNHEKWNI7EA7ESWV3DOB7XMTG7DMP3LPDCI4FUNI
-export STATE=24029953
-export ESCROW=6EU6EKDJFTHWQLRJS32DBYU5OL6WT4WXN7WNQHRIJAEYNBGUIJAZUIVJK4
-export ASA=23828034
+export OWNER=FA3Q2Q7MNOPTOSCPRKJPSSBZSBPINAVZAIBUXMYM3DJMBJQUHKGIYAFWQE
+export FEE=L4ON2ZTYZF7ON6ZLJCPRNU7ZCUFYUZYFNE75O4FMZCT5QZYPOM4VT5EVCY
+export A=OXLNT4UDWVQJRAD7RMZVKQFKZM2CRGLWP7R2BGWBWWXADOWYMWWXGAX7UU
+export B=BUKIB5N5OWS73JDOCUDCDVY4FOOJABYY7IFUMB63DPBRVRWV6KVYE4UMUM
+export STATE=29146267
+export ESCROW=FZSBSTE7UUHUCQFRPVZICEJGYCXOAUM3GRAY5UERUAKI45T2ZIWQFYHDIA
+export ASA=29147319
 export LOCK_ALGO_FEE=4000
 export LOCK_ASA_FEE=5000
 export UNLOCK_FEE=1000
 export ENERGY=100
 export SPEED=2
 export DURATION=5
-export ENERGY_A=90
-export ENERGY_FEE=1
-export ENERGY_B=9
+export ENERGY_A=0
+export ENERGY_FEE=10
+export ENERGY_B=90
 
 // start goal, create wallet and account
 goal node start
 goal node status
 goal node end
 goal wallet new $WALLET
-kangaroo cool entry raw steak wage gap drive fringe opinion primary rebel sea amazing select satoshi test announce dry post real wheel word ability raven
 goal account new -w $WALLET
 
 // manage state dapp
@@ -47,14 +46,14 @@ goal clerk send --amount 1000000 --from $OWNER --to $ESCROW -w $WALLET
 
 // manage ASA
 // https://developer.algorand.org/docs/reference/cli/goal/asset/send/
-goal asset create --creator $OWNER --total 1000000000 --unitname LOLTEST1 --decimals 0
-goal asset send -a 0 --assetid $ASA -f $FEE -t $FEE
-goal asset send -a 0 --assetid $ASA -f $A -t $A
-goal asset send -a 0 --assetid $ASA -f $B -t $B
+goal asset create --creator $OWNER --total 1000000000 --unitname NOVALUE --decimals 0 -w $WALLET
+goal asset send -a 0 --assetid $ASA -f $FEE -t $FEE -w $WALLET
+goal asset send -a 0 --assetid $ASA -f $A -t $A -w $WALLET
+goal asset send -a 0 --assetid $ASA -f $B -t $B -w $WALLET
 goal asset send -a 0 --assetid $ASA -f $ESCROW -t $ESCROW --out=$TXNS_DIR/optin.txn
-goal clerk sign -i $CODE_DIR/optin.txn -p $CODE_DIR/escrow.teal -o $TXNS_DIR/optin.stxn
-goal clerk rawsend -f $CODE_DIR/optin.stxn
-goal asset send -a 1000 --assetid $ASA -f $OWNER -t $A
+goal clerk sign -i $TXNS_DIR/optin.txn -p $CODE_DIR/escrow.teal -o $TXNS_DIR/optin.stxn
+goal clerk rawsend -f $TXNS_DIR/optin.stxn
+goal asset send -a 1000 --assetid $ASA -f $OWNER -t $A -w $WALLET
 
 // check values
 echo ASA $ASA
