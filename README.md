@@ -1,4 +1,4 @@
-# algorand
+# 2i2i algorand
 
 Facilitate energy transfer from A to B via Algorand.
 
