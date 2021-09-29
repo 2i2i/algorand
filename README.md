@@ -18,6 +18,11 @@ Info: Information in the form of a live video call is what B provides to A in ex
 Speed: The speeed of the energy transfer from A to B. A1 might bid 3 ALGO/sec, A2 might bid 10 ALGO/sec to talk to B. B would probably choose the highest bid (but can choose any bid).
 
 
+Diagram
+=======
+https://imgur.com/a/RijwrX9
+
+
 In Detail:
 ==========
 
