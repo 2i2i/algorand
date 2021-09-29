@@ -52,8 +52,26 @@ After that the transaction unsets the state (cleaning).
 
 No loss system
 ==============
-The system is designed to cause no loss to the system. All fees that the smart contracts will incur to unlock need to be prepaid by A.
-If A is bidding in ALGO, A needs to send an extra 4*MIN_TXT_FEE (currently 0.004 ALGO) to the system.
+The system is designed such that no loss can be caused to the system. All fees that the smart contracts will incur to unlock need to be prepaid by A.
+If A is bidding in ALGO, A needs to send an extra 4 * MIN_TXT_FEE (currently 0.004 ALGO) to the system.
 If A is bidding in any other COIN (ASA), A needs to send an extra 5*MIN_TXT_FEE (currently 0.005 ALGO) to the system.
 This results in a net 0 cost to the system.
 
+Although any ASA can be used, the Escrow and Fee accounts might not be opted-into the ASA in question.
+The following feature is currently under development:
+Any user can start an opt-in process to any ASA of their choosing. The process will result in a atomic transaction with
+
+1) Opt-in the users' account to ASA
+2) The user sends 1 MIN_TXT_FEE + MIN_BALANCE_INCREASE (0.001 + 0.1 ALGO) to the Escrow account
+3) The user makes an app call to the State contract to allow 2) - (actually, maybe we can eliminate this transaction - hence not counted in cost below)
+4) The user sends 1 MIN_TXT_FEE + MIN_BALANCE_INCREASE (0.001 + 0.1 ALGO) to the Fee account
+5) The Escrow account opts-in to the ASA
+6) The Fee account opts-in to the ASA
+
+The total cost to the user to opt-in our system into a ASA of their choosing is then:
+4 * MIN_TXT_FEE + 2 * MIN_BALANCE_INCREASE = 4 * 0.001 + 2 * 0.1 = 0.204 ALGO
+
+Thus, this scheme allows the system to be opted-into any ASA without incurring loss due to e.g. spamming.
+Some user has to care enough about this ASA to spend 0.204 ALGO for the system to add it.
+
+Any user A can then bid any ASA. If user B is not opted-into this ASA, the coins will remain in Escrow for user B to pick as soon as user B opts-into this ASA. If the coins have any value, user B will do that.
