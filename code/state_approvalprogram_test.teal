@@ -1,0 +1,559 @@
+#pragma version 4
+
+////////////////
+// Handle each possible OnCompletion type. We don't have to worry about
+// handling ClearState, because the ClearStateProgram will execute in that
+// case, not the ApprovalProgram.
+// see ../manage/goal_code for examples
+
+txn OnCompletion
+int NoOp
+==
+bnz handle_noop
+
+txn OnCompletion
+int OptIn
+==
+bnz handle_optin
+
+txn OnCompletion
+int CloseOut
+==
+bnz handle_closeout
+
+txn OnCompletion
+int UpdateApplication
+==
+bnz handle_updateapp
+
+txn OnCompletion
+int DeleteApplication
+==
+bnz handle_deleteapp
+
+// Unexpected OnCompletion value. Should be unreachable.
+b decline
+////////////////
+
+
+
+////////////////
+// main part of code: NoOp
+// 2 cases each with 2 subcases: lock (algo or asa), unlock (algo or asa)
+// TODO add edge cases - A xor B get nothing
+
+handle_noop:
+
+txna ApplicationArgs 0
+byte "LOCK"
+==
+bnz handle_lock
+
+txna ApplicationArgs 0
+byte "UNLOCK"
+==
+bnz handle_unlock
+
+// for debugging, useful to clear state
+// txna ApplicationArgs 0
+// byte "CLEAR"
+// ==
+// bnz handle_clear_state
+
+// Unexpected first arg
+b decline
+////////////////
+
+
+
+////////////////
+// case lock
+// locks consist of 2 main txns
+// 1. call STATE dapp (to set state)
+// 2. send coins to ESCROW (to lock)
+// in case the coins sent are an ASA, we have a 3rd txn:
+// 3. send ALGO to ESCROW to cover unlock fees paid by ESCROW/OWNER
+handle_lock:
+
+// Check that this is the first txn
+txn GroupIndex
+int 0
+==
+assert
+
+// Check that state is not set already
+// DEBUG comment out following to test accounts that have "B" set
+int 0
+int 0
+byte "B"
+app_local_get_ex
+!
+assert
+
+// locking ALGO?
+global GroupSize
+int 2
+==
+bnz handle_lock_algo
+
+// locking ASA?
+global GroupSize
+int 3
+==
+bnz handle_lock_asa
+
+// need to either be locking ALGO or ASA
+b decline
+////////////////
+
+
+////////////////
+// case lock ALGO
+handle_lock_algo:
+
+// Check that the second txn is to our escrow
+gtxn 1 Receiver
+// TODO change to $ESCROW (whenver it changes)
+// btw, we have a circular change - when ESCROW changes, we need to change STATE, which needs an ESCROW change, etc.
+// it works bc STATE (this) can be *updated* without changing its id
+addr FZSBSTE7UUHUCQFRPVZICEJGYCXOAUM3GRAY5UERUAKI45T2ZIWQFYHDIA
+==
+assert
+
+// Check that amount is enough - this is to cover fees to unlock paid by ESCROW
+global MinTxnFee
+int 4
+*
+gtxn 1 Amount
+<
+assert
+
+// Store energy and assetid for use in sub 'set_state'
+// energy stored is amount sent minus txn fees required
+gtxn 1 Amount
+global MinTxnFee
+int 4
+*
+-
+store 1
+gtxn 1 XferAsset
+store 2
+b set_state
+////////////////
+
+
+////////////////
+// lock ASA case
+handle_lock_asa:
+
+// Check that the second txn is to our ESCROW
+gtxn 1 Receiver
+// TODO change to $ESCROW (whenver it changes)
+// btw, we have a circular change - when ESCROW changes, we need to change STATE, which needs an ESCROW change, etc.
+// it works bc STATE (this) can be *updated* without changing its id
+addr FZSBSTE7UUHUCQFRPVZICEJGYCXOAUM3GRAY5UERUAKI45T2ZIWQFYHDIA
+==
+assert
+
+// Check that the third txn is to ESCROW
+gtxn 2 AssetReceiver
+// TODO change to $ESCROW (whenver it changes)
+// btw, we have a circular change - when ESCROW changes, we need to change STATE, which needs an ESCROW change, etc.
+// it works bc STATE (this) can be *updated* without changing its id
+addr FZSBSTE7UUHUCQFRPVZICEJGYCXOAUM3GRAY5UERUAKI45T2ZIWQFYHDIA
+==
+assert
+
+// Check that amount is enough - this is to cover fees to unlock paid by ESCROW
+global MinTxnFee
+int 5
+*
+gtxn 1 Amount
+==
+assert
+
+// Store energy and assetid for use in sub 'set_state'
+// energy stored is amount sent minus txn fees required
+gtxn 2 AssetAmount
+store 1
+gtxn 2 XferAsset
+store 2
+b set_state
+////////////////
+
+
+////////////////
+// set state
+set_state:
+
+// Set state speed
+int 0
+byte "speed"
+txna ApplicationArgs 2
+btoi
+app_local_put
+
+// Set state energy
+// TODO need Amount of the other txn
+int 0
+byte "energy"
+load 1
+app_local_put
+
+// Set state energy assetid
+int 0
+byte "assetid"
+load 2
+app_local_put
+
+// Set state B
+int 0
+byte "B"
+txn ApplicationArgs 1
+app_local_put
+
+b approve
+////////////////
+
+
+////////////////
+// case unlock
+// unlocks consist of 4 main txns
+// 1. call STATE dapp (to check and unset state)
+// 2. send coins from ESCROW back to A (unused energy)
+// 3. send coins from ESCROW to FEE (service fee)
+// 4. send coins from ESCROW to B (energy transfer)
+// in case the coins sent are an ASA, we have a 5th txn:
+// 3. send ALGO from ESCROW to FEE to cover unlock fees paid by ESCROW/OWNER
+handle_unlock:
+
+// only owner can unlock
+txn Sender
+global CreatorAddress
+==
+assert
+
+// assetid == 0 <=> ALGO only transfer
+int 1
+byte "assetid"
+app_local_get
+int 0
+==
+// case unlock ALGO
+bnz handle_unlock_algo
+// case unlock ASA
+b handle_unlock_asa
+////////////////
+
+
+
+////////////////
+// case unlock ALGO
+handle_unlock_algo:
+
+// Check B txn receiver == A set B
+int 1
+byte "B"
+app_local_get
+gtxn 2 Receiver
+==
+assert
+
+// Check amount of B txn <= locked energy
+gtxn 2 Amount
+int 1
+byte "energy"
+app_local_get
+<=
+assert
+
+
+// handle 2 cases
+// case: txn for A + B
+global GroupSize
+int 4
+==
+bnz handle_unlock_algo_AB
+
+// case: no txn for A
+global GroupSize
+int 3
+==
+bnz handle_unlock_algo_B
+
+// wrong case
+b decline
+
+
+// case: txn for A + B
+handle_unlock_algo_AB:
+
+// Check that amount of B txn matches the duration*speed
+// * panics on overflow, so we are safe
+// txn ApplicationArgs 1 = duration
+txn ApplicationArgs 1
+btoi
+int 1
+byte "speed"
+app_local_get
+*
+// to FEE
+gtxn 1 Amount
+// MinTxnFee is sent to FEE to cover owner txn cost
+global MinTxnFee
+-
+// to B
+gtxn 2 Amount
++
+==
+assert
+
+// Check amount of A txn <= locked energy
+gtxn 3 Amount
+int 1
+byte "energy"
+app_local_get
+<=
+assert
+
+// Check A + FEE + B = energy
+gtxn 3 Amount
+gtxn 1 Amount
+global MinTxnFee
+-
+gtxn 2 Amount
++
++
+int 1
+byte "energy"
+app_local_get
+==
+assert
+
+b unlock_unset_state
+
+// case: no txn for A
+handle_unlock_algo_B:
+
+// Check FEE + B = energy
+gtxn 1 Amount
+global MinTxnFee
+-
+gtxn 2 Amount
++
+int 1
+byte "energy"
+app_local_get
+==
+assert
+
+b unlock_unset_state
+////////////////
+
+
+
+
+
+////////////////
+// case unlock ASA
+handle_unlock_asa:
+
+// Check B txn receiver == A set B
+int 1
+byte "B"
+app_local_get
+gtxn 3 AssetReceiver
+==
+assert
+
+// Check that amount of ALGO txn is correct
+global MinTxnFee
+gtxn 1 Amount
+==
+assert
+
+// Check amount of B txn <= locked energy
+gtxn 3 AssetAmount
+int 1
+byte "energy"
+app_local_get
+<=
+assert
+
+
+// handle 2 cases
+// case: txn for A + B
+global GroupSize
+int 5
+==
+bnz handle_unlock_asa_AB
+
+// case: no txn for A
+global GroupSize
+int 4
+==
+bnz handle_unlock_asa_B
+
+// wrong case
+b decline
+
+
+// case: txn for A + B
+handle_unlock_asa_AB:
+
+// Check that amount of B txn matches the duration*speed
+// * panics on overflow, so we are safe
+// txn ApplicationArgs 1 = duration
+txn ApplicationArgs 1
+btoi
+int 1
+byte "speed"
+app_local_get
+*
+// to FEE
+gtxn 2 AssetAmount
+// to B
+gtxn 3 AssetAmount
++
+==
+assert
+
+// Check amount of A txn <= locked energy
+gtxn 4 AssetAmount
+int 1
+byte "energy"
+app_local_get
+<=
+assert
+
+// Check A + FEE + B = energy
+gtxn 4 AssetAmount
+gtxn 2 AssetAmount
+gtxn 3 AssetAmount
++
++
+int 1
+byte "energy"
+app_local_get
+==
+assert
+
+b unlock_unset_state
+
+// case: no txn for A
+handle_unlock_asa_B:
+
+// Check FEE + B = energy
+gtxn 2 AssetAmount
+gtxn 3 AssetAmount
++
+int 1
+byte "energy"
+app_local_get
+==
+assert
+
+b unlock_unset_state
+////////////////
+
+
+
+////////////////
+// Cleanup
+unlock_unset_state:
+int 1
+byte "B"
+app_local_del
+
+int 1
+byte "speed"
+app_local_del
+
+int 1
+byte "energy"
+app_local_del
+
+int 1
+byte "assetid"
+app_local_del
+
+b approve
+////////////////
+
+
+
+////////////////
+// for debugging only - useful to clear local state
+handle_clear_state:
+
+txn Sender
+byte "B"
+app_local_del
+
+txn Sender
+byte "speed"
+app_local_del
+
+txn Sender
+byte "energy"
+app_local_del
+
+txn Sender
+byte "assetid"
+app_local_del
+
+b approve
+////////////////
+
+
+////////////////
+// Handle OptIn
+handle_optin:
+b approve
+////////////////
+// Handle OptIn
+
+
+///////////////
+// Update only by creator - for now
+// TODO maybe make updating impossible for safety and assurance
+handle_updateapp:
+
+global GroupSize
+int 1
+==
+global CreatorAddress
+txn Sender
+==
+&&
+
+b approve
+///////////////
+
+
+///////////////
+// handle closeOut, cannot delete app, no decline
+handle_closeout:
+handle_deleteapp:
+handle_decline:
+b decline
+///////////////
+
+
+
+////////////////
+// end brances
+decline:
+err
+
+approve:
+int 1
+return
+////////////////
+
+
+////////////////
+// fyi
+// Txn.Accounts[0] is sender of txn
+// Txn.Apps[0] is own app
+////////////////
