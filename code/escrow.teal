@@ -60,7 +60,7 @@ branch_payout:
 // Check that first transaction is state dapp txn
 gtxn 0 ApplicationID
 // TODO always replace with $STATE (whenever changed)
-int 29682197
+int 29146267
 ==
 bnz approve
 b decline
