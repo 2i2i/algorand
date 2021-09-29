@@ -1,4 +1,0 @@
-// simplest TEAL to always approve
-#pragma version 4
-int 1
-return

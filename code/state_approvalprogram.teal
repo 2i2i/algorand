@@ -116,7 +116,7 @@ gtxn 1 Receiver
 // TODO change to $ESCROW (whenver it changes)
 // btw, we have a circular change - when ESCROW changes, we need to change STATE, which needs an ESCROW change, etc.
 // it works bc STATE (this) can be *updated* without changing its id
-addr FZSBSTE7UUHUCQFRPVZICEJGYCXOAUM3GRAY5UERUAKI45T2ZIWQFYHDIA
+addr DTSH3U2U3IZDTAXAAXOLXDXLLIULG6FT57JEAD4NUHPYFJ2W5C23G5CVJY
 ==
 assert
 
@@ -151,7 +151,7 @@ gtxn 1 Receiver
 // TODO change to $ESCROW (whenver it changes)
 // btw, we have a circular change - when ESCROW changes, we need to change STATE, which needs an ESCROW change, etc.
 // it works bc STATE (this) can be *updated* without changing its id
-addr FZSBSTE7UUHUCQFRPVZICEJGYCXOAUM3GRAY5UERUAKI45T2ZIWQFYHDIA
+addr DTSH3U2U3IZDTAXAAXOLXDXLLIULG6FT57JEAD4NUHPYFJ2W5C23G5CVJY
 ==
 assert
 
@@ -160,7 +160,7 @@ gtxn 2 AssetReceiver
 // TODO change to $ESCROW (whenver it changes)
 // btw, we have a circular change - when ESCROW changes, we need to change STATE, which needs an ESCROW change, etc.
 // it works bc STATE (this) can be *updated* without changing its id
-addr FZSBSTE7UUHUCQFRPVZICEJGYCXOAUM3GRAY5UERUAKI45T2ZIWQFYHDIA
+addr DTSH3U2U3IZDTAXAAXOLXDXLLIULG6FT57JEAD4NUHPYFJ2W5C23G5CVJY
 ==
 assert
 
@@ -544,7 +544,8 @@ b decline
 ////////////////
 // end brances
 decline:
-err
+int 0
+return
 
 approve:
 int 1

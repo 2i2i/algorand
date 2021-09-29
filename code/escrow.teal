@@ -7,17 +7,19 @@
 global GroupSize
 int 1
 ==
+bnz branch_optin
+b branch_payout
+
+branch_optin:
+// Opt-In has to be ASA
 txn TypeEnum
 int axfer
 ==
-&&
-bnz branch_optin
-
-branch_optin:
 // Opt-In Asset Amount is 0
 txn AssetAmount
 int 0
 ==
+&&
 // Opt-In executed as Auto-AssetTransfer
 txn Sender
 txn AssetReceiver
@@ -48,28 +50,27 @@ txn RekeyTo
 global ZeroAddress
 ==
 &&
-b approve
+bnz approve
+b decline
 
 //////////////
 // TEAL to allow payout from escrow
-
-// Check that txn is a payment
-txn TypeEnum
-int pay
-==
-assert
+branch_payout:
 
 // Check that first transaction is state dapp txn
 gtxn 0 ApplicationID
 // TODO always replace with $STATE (whenever changed)
-int 29146267
+int 29682197
 ==
-assert
-
-b approve
+bnz approve
+b decline
 
 //////////////
 // end branches
+decline:
+int 0
+return
+
 approve:
 int 1
 return
