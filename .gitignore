@@ -1,4 +1,5 @@
 *.txn
+*.stxn
 *.tok
 *.rej
 *.sig
