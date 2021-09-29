@@ -10,6 +10,9 @@ export ALGORAND_DATA="$HOME/node/testnetdata"
 export WALLET=2i2i_testnet
 export CODE_DIR=./code
 export TXNS_DIR=./txns
+export ESCROW_FILE=$CODE_DIR/escrow.teal
+export STATE_APPROVAL_FILE=$CODE_DIR/state_approvalprogram.teal
+export STATE_CLEAR_FILE=$CODE_DIR/state_clearprogram.teal
 export OWNER=FA3Q2Q7MNOPTOSCPRKJPSSBZSBPINAVZAIBUXMYM3DJMBJQUHKGIYAFWQE
 export FEE=L4ON2ZTYZF7ON6ZLJCPRNU7ZCUFYUZYFNE75O4FMZCT5QZYPOM4VT5EVCY
 export A=OXLNT4UDWVQJRAD7RMZVKQFKZM2CRGLWP7R2BGWBWWXADOWYMWWXGAX7UU
@@ -35,13 +38,13 @@ goal wallet new $WALLET
 goal account new -w $WALLET
 
 // manage state dapp
-goal app create --creator $OWNER --approval-prog $CODE_DIR/state_approvalprogram.teal --clear-prog $CODE_DIR/state_clearprogram.teal --global-byteslices 0 --global-ints 0 --local-byteslices 1 --local-ints 4 --extra-pages 0 --on-completion OptIn -w $WALLET
+goal app create --creator $OWNER --approval-prog $STATE_APPROVAL_FILE --clear-prog $STATE_CLEAR_FILE --global-byteslices 0 --global-ints 0 --local-byteslices 1 --local-ints 4 --extra-pages 0 --on-completion OptIn -w $WALLET
 goal app optin --app-id $STATE --from $A -w $WALLET
 goal app optin --app-id $STATE --from $B -w $WALLET
-goal app update --app-id=$STATE --from=$OWNER --approval-prog $CODE_DIR/state_approvalprogram.teal --clear-prog $CODE_DIR/state_clearprogram.teal -w $WALLET
+goal app update --app-id=$STATE --from=$OWNER --approval-prog $STATE_APPROVAL_FILE --clear-prog $STATE_CLEAR_FILE -w $WALLET
 
 // manage stateless escrow account
-goal clerk compile $CODE_DIR/escrow.teal -w $WALLET
+goal clerk compile $ESCROW_FILE -w $WALLET
 goal clerk send --amount 1000000 --from $OWNER --to $ESCROW -w $WALLET
 
 // manage ASA
@@ -51,7 +54,7 @@ goal asset send -a 0 --assetid $ASA -f $FEE -t $FEE -w $WALLET
 goal asset send -a 0 --assetid $ASA -f $A -t $A -w $WALLET
 goal asset send -a 0 --assetid $ASA -f $B -t $B -w $WALLET
 goal asset send -a 0 --assetid $ASA -f $ESCROW -t $ESCROW --out=$TXNS_DIR/optin.txn
-goal clerk sign -i $TXNS_DIR/optin.txn -p $CODE_DIR/escrow.teal -o $TXNS_DIR/optin.stxn
+goal clerk sign -i $TXNS_DIR/optin.txn -p $ESCROW_FILE -o $TXNS_DIR/optin.stxn
 goal clerk rawsend -f $TXNS_DIR/optin.stxn
 goal asset send -a 1000 --assetid $ASA -f $OWNER -t $A -w $WALLET
 
@@ -84,4 +87,4 @@ goal app call --from=$A --app-id=$STATE --app-arg="str:CLEAR" -w $WALLET
 // debugging - not really working
 goal clerk dryrun -t $TXNS_DIR/signout.txn
 goal clerk dryrun -t $TXNS_DIR/signout.txn --dryrun-dump  -o $TXNS_DIR/dr.json
-tealdbg debug $CODE_DIR/state_approvalprogram.teal -d $TXNS_DIR/dr.msgp --group-index 0
+tealdbg debug $STATE_APPROVAL_FILE -d $TXNS_DIR/dr.msgp --group-index 0
