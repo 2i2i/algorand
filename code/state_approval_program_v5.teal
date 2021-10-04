@@ -1,0 +1,469 @@
+#pragma version 5
+
+////////////////
+// Handle each possible OnCompletion type. We don't have to worry about
+// handling ClearState, because the ClearStateProgram will execute in that
+// case, not the ApprovalProgram.
+// see ../manage/goal_code_v5 for examples
+
+txn OnCompletion
+int NoOp
+==
+bnz handle_noop
+
+txn OnCompletion
+int OptIn
+==
+bnz handle_optin
+
+txn OnCompletion
+int CloseOut
+==
+bnz handle_closeout
+
+txn OnCompletion
+int UpdateApplication
+==
+bnz handle_updateapp
+
+txn OnCompletion
+int DeleteApplication
+==
+bnz handle_deleteapp
+
+// Unexpected OnCompletion value. Should be unreachable.
+b decline
+////////////////
+
+
+////////////////
+// main part of code: NoOp
+// 3 cases each with 2 subcases: lock (algo or asa), unlock (algo or asa), payout_b (algo or asa)
+
+handle_noop:
+
+txna ApplicationArgs 0
+byte "LOCK"
+==
+bnz handle_lock
+
+txna ApplicationArgs 0
+byte "UNLOCK"
+==
+bnz handle_unlock
+
+txna ApplicationArgs 0
+byte "ASA_OPTIN"
+==
+bnz handle_asa_optin
+
+// txna ApplicationArgs 0
+// byte "PAYOUT_B"
+// ==
+// bnz handle_payout_b
+
+// for debugging, useful to clear state
+// txna ApplicationArgs 0
+// byte "CLEAR"
+// ==
+// bnz handle_clear_state
+
+// Unexpected first arg
+b decline
+////////////////
+
+////////////////
+// case ASA opt-in
+handle_asa_optin:
+
+global GroupSize
+int 2
+==
+assert
+
+
+////////////////
+
+
+
+////////////////
+// case lock
+// locks consist of 2 main txns
+// 1. call STATE dapp (to set state)
+// 2. send coins to ESCROW (to lock)
+// in case the coins sent are an ASA, we have a 3rd txn:
+// 3. send ALGO to ESCROW to cover unlock fees paid by ESCROW/OWNER
+handle_lock:
+
+// Check that this is the first txn
+txn GroupIndex
+int 0
+==
+assert
+
+// Check that state is not set already
+// DEBUG comment out following to test accounts that have "B" set
+// int 0
+// int 0
+// byte "B"
+// app_local_get_ex
+// !
+// assert
+
+// locking ALGO?
+global GroupSize
+int 2
+==
+bnz handle_lock_algo
+
+// locking ASA?
+global GroupSize
+int 3
+==
+bnz handle_lock_asa
+
+// need to either be locking ALGO or ASA
+b decline
+////////////////
+
+
+////////////////
+// case lock ALGO
+handle_lock_algo:
+
+// Check that the second txn is to our escrow
+gtxn 1 Receiver
+global CurrentApplicationAddress
+==
+assert
+
+// Check that amount is enough - this is to cover fees to unlock paid by ESCROW
+global MinTxnFee
+int 4
+*
+gtxn 1 Amount
+<
+assert
+
+// Store energy and assetid for use in sub 'set_state'
+// energy stored is amount sent minus txn fees required
+gtxn 1 Amount
+global MinTxnFee
+int 4
+*
+-
+int 0 // ALGO is assetId 0
+// stack: energy, assetId
+b set_state
+////////////////
+
+
+////////////////
+// lock ASA case
+handle_lock_asa:
+
+// Check that the second txn is to our SYSTEM_ACCOUNT
+gtxn 1 Receiver
+global CurrentApplicationAddress
+==
+assert
+
+// Check that the third txn is to SYSTEM_ACCOUNT
+gtxn 2 AssetReceiver
+global CurrentApplicationAddress
+==
+assert
+
+// Check that amount is enough - this is to cover fees to unlock paid by ESCROW
+global MinTxnFee
+int 5
+*
+gtxn 1 Amount
+==
+assert
+
+// Store energy and assetid for use in sub 'set_state'
+// energy stored is amount sent minus txn fees required
+gtxn 2 AssetAmount
+gtxn 2 XferAsset
+// stack: energy, assetId
+b set_state
+////////////////
+
+
+////////////////
+// set state
+// pops: ... stack, 
+set_state:
+
+// Set state speed
+int 0
+byte "speed"
+txna ApplicationArgs 2
+btoi
+app_local_put
+
+// Set state energy assetid
+int 0
+byte "assetId"
+dig 2 // app_local_put needs value on top
+app_local_put
+pop // dig 2
+
+// Set state energy
+// TODO need Amount of the other txn
+int 0
+byte "energy"
+dig 2 // app_local_put needs value on top
+app_local_put
+pop // dig 2
+
+// Set state B
+int 0
+byte "B"
+txn ApplicationArgs 1
+app_local_put
+
+b approve
+////////////////
+
+
+
+////////////////
+// case unlock
+// unlocks consist of 4 main txns
+// 1. call STATE dapp (to check and unset state)
+// 2. send coins from ESCROW back to A (unused energy)
+// 3. send coins from ESCROW to FEE (service fee)
+// 4. send coins from ESCROW to B (energy transfer)
+// in case the coins sent are an ASA, we have a 5th txn:
+// 3. send ALGO from ESCROW to FEE to cover unlock fees paid by ESCROW/OWNER
+handle_unlock:
+
+// only owner can unlock
+txn Sender
+global CreatorAddress
+==
+assert
+
+// assetId == 0 <=> ALGO only transfer
+// fail if assetId not set
+int 1
+int 0
+byte "assetId"
+app_local_get_ex
+assert
+int 0
+==
+// case unlock ALGO
+bnz handle_unlock_algo
+// case unlock ASA
+// b handle_unlock_asa
+////////////////
+
+
+////////////////
+// case unlock ALGO
+handle_unlock_algo:
+
+// Check B txn receiver == A set B
+int 1
+byte "B"
+app_local_get
+txna Accounts 2
+==
+assert
+
+// Split and send energies
+int 1
+byte "speed"
+app_local_get
+txna ApplicationArgs 1 // duration
+btoi
+int 1
+byte "energy"
+app_local_get
+callsub split_energy
+
+// if energyA == 0, send back MinTxnFee-
+
+// stack: energyA, energyFee, energyB
+txna Accounts 2 // B
+callsub send_algo
+
+// stack: energyA, energyFee
+global MinTxnFee
++
+global CreatorAddress // Fee
+callsub send_algo
+
+
+txna Accounts 1 // A
+callsub send_algo
+
+b unset_state
+
+////////////////
+// Cleanup
+unset_state:
+int 1
+byte "B"
+app_local_del
+
+int 1
+byte "speed"
+app_local_del
+
+int 1
+byte "energy"
+app_local_del
+
+int 1
+byte "assetId"
+app_local_del
+
+b approve
+////////////////
+
+
+////////////////
+// Handle OptIn
+handle_optin:
+b approve
+////////////////
+// Handle OptIn
+
+
+///////////////
+// Update only by creator - for now
+// TODO maybe make updating impossible for safety and assurance
+handle_updateapp:
+
+global GroupSize
+int 1
+==
+global CreatorAddress
+txn Sender
+==
+&&
+bnz approve
+b decline
+///////////////
+
+
+///////////////
+// handle closeOut, cannot delete app, no decline
+handle_closeout:
+handle_deleteapp:
+b decline
+///////////////
+
+
+////////////////
+// subroutines
+
+// A < B ? A : B
+// pops: ... stack, A, B
+// pushes: A xor B
+min:
+dup2
+>=
+select
+retsub
+
+// if amount != 0, send algo
+// pops: ... stack, amount, receiver
+// pushes: none
+send_algo:
+dig 1
+bz send_algo_end_early
+itxn_begin
+int pay
+itxn_field TypeEnum
+itxn_field Receiver
+itxn_field Amount
+itxn_submit
+retsub
+send_algo_end_early:
+pop
+pop
+retsub
+
+// if amount != 0, send asa
+// pops: ... stack, assetId, amount, receiver
+// pushes: none
+send_asa:
+dig 1
+bz send_asa_end_early
+itxn_begin
+int axfer
+itxn_field TypeEnum
+itxn_field AssetReceiver
+itxn_field AssetAmount
+itxn_field XferAsset
+itxn_submit
+retsub
+send_asa_end_early:
+pop
+pop
+pop
+retsub
+
+// given balance, speed and duration, calc energyA, energyFee, energyB
+// pops: ... stack, speed, duration, balance
+// pushes: energyA, energyFee, energyB
+split_energy:
+store 0 // balance
+// stack: speed, duration
+*
+// stack: theo energy B
+load 0
+// stack: theo energy B, balance
+callsub min
+store 1 // energy B before fee
+// stack:
+load 0
+load 1
+// balance, energy B before fee
+-
+store 2 // energyA
+// stack:
+load 1
+// stack: energy B before fee
+dup
+// stack: energy B before fee, energy B before fee
+int 9
+*
+int 10
+/
+// stack: energy B before fee, energyB
+store 3 // energyB
+// stack: energy B before fee
+load 3
+// stack: energy B before fee, energyB
+-
+// stack: energyFee
+load 2
+swap
+load 3
+// stack: energyA, energyFee, energyB
+retsub
+////////////////
+
+////////////////
+// end branches
+decline:
+int 0
+return
+
+approve:
+int 1
+return
+////////////////
+
+
+////////////////
+// fyi
+// Txn.Accounts[0] is sender of txn
+// Txn.Apps[0] is own app
+////////////////

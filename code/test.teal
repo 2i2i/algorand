@@ -1,0 +1,13 @@
+#pragma version 5
+
+itxn_begin
+int pay
+itxn_field TypeEnum
+addr TI25CIA3XSYCQKCGUZLBWF5XNZ4BO7GERELKI4KHKVXEPHZF5LA4I47PFI
+itxn_field Receiver
+int 1002098
+itxn_field Amount
+itxn_submit
+
+int 1
+return
