@@ -1,5 +1,15 @@
 #pragma version 5
 
+// idea: ASA opt-in within lock if not yet opted-in
+// app checks if SYSTEM is opted-in
+// if not, need to send some extra
+
+////////////////
+// scratch "global" usage (this is global within the txn)
+// used to make code shorter
+// 100: energy
+// 101: assetId
+
 ////////////////
 // Handle each possible OnCompletion type. We don't have to worry about
 // handling ClearState, because the ClearStateProgram will execute in that
@@ -52,10 +62,10 @@ byte "UNLOCK"
 ==
 bnz handle_unlock
 
-txna ApplicationArgs 0
-byte "ASA_OPTIN"
-==
-bnz handle_asa_optin
+// txna ApplicationArgs 0
+// byte "ASA_OPTIN"
+// ==
+// bnz handle_asa_optin
 
 // txna ApplicationArgs 0
 // byte "PAYOUT_B"
@@ -72,19 +82,44 @@ bnz handle_asa_optin
 b decline
 ////////////////
 
-////////////////
-// case ASA opt-in
-// needs to be atomic
-// 2nd txn send MinTxnFee + MinASABalanceIncrease (0.001 ALGO + 0.1 ALGO)
-handle_asa_optin:
+// ////////////////
+// // case ASA opt-in
+// // needs to be atomic
+// // 2nd txn send 2*(MinTxnFee + MinASABalanceIncrease) + MinTxnFee
+// // send MinTxnFee + MinASABalanceIncrease to Creator to opt-in
+// // Creator needs to opt-in afterwards (will be done serverside)
+// // since inner txns cannot use smart sig
+// handle_asa_optin:
 
-global GroupSize
-int 2
-==
-assert
+// // atomic
+// global GroupSize
+// int 2
+// ==
+// assert
 
+// // correct amount
+// global MinTxnFee
+// int 3
+// *
+// int 100000 // MinASABalanceIncrease
+// int 2
+// *
+// +
+// txn Amount
+// ==
+// assert
 
+// // opt-in
+// // pops: ... stack, assetId, amount, receiver
+// // pushes: none
 
+// callsub send_asa
+
+// // send ALGO to Creator for opt-in
+// // pops: ... stack, amount, receiver
+// callsub send_algo
+
+// b approve
 
 ////////////////
 
@@ -149,15 +184,17 @@ gtxn 1 Amount
 <
 assert
 
-// Store energy and assetid for use in sub 'set_state'
+// Store energy and assetid for use in branch set_state
 // energy stored is amount sent minus txn fees required
 gtxn 1 Amount
 global MinTxnFee
 int 4
 *
 -
-int 0 // ALGO is assetId 0
-// stack: energy, assetId
+store 100
+gtxn 1 XferAsset // 0
+store 101
+
 b set_state
 ////////////////
 
@@ -178,6 +215,49 @@ global CurrentApplicationAddress
 ==
 assert
 
+// Store energy and assetid for use in branch set_state
+// energy stored is amount sent minus txn fees required
+gtxn 1 Amount
+global MinTxnFee
+int 4
+*
+-
+store 100
+gtxn 1 XferAsset // 0
+store 101
+
+// Are we opted-in to the ASA?
+global CurrentApplicationAddress
+gtxn 2 XferAsset
+asset_holding_get AssetBalance
+bz asa_opt_in
+b continue_lock
+
+asa_opt_in:
+global MinTxnFee
+int 3
+*
+int 100000 // MinASABalanceIncrease
+int 2
+*
++
+// stack: 
+gtxn 1 Amount
+>
+assert
+
+// opt-in
+// pops: ... stack, assetId, amount, receiver
+// pushes: none
+
+callsub send_asa
+
+// send ALGO to Creator for opt-in
+// pops: ... stack, amount, receiver
+callsub send_algo
+
+
+continue_lock:
 // Check that amount is enough - this is to cover fees to unlock paid by ESCROW
 global MinTxnFee
 int 5
@@ -186,18 +266,13 @@ gtxn 1 Amount
 ==
 assert
 
-// Store energy and assetid for use in sub 'set_state'
-// energy stored is amount sent minus txn fees required
-gtxn 2 AssetAmount
-gtxn 2 XferAsset
-// stack: energy, assetId
 b set_state
 ////////////////
 
 
 ////////////////
 // set state
-// pops: ... stack, 
+// pops: ... stack, assetId
 set_state:
 
 // Set state speed
@@ -210,17 +285,15 @@ app_local_put
 // Set state energy assetid
 int 0
 byte "assetId"
-dig 2 // app_local_put needs value on top
+load 101
 app_local_put
-pop // dig 2
 
 // Set state energy
 // TODO need Amount of the other txn
 int 0
 byte "energy"
-dig 2 // app_local_put needs value on top
+load 100
 app_local_put
-pop // dig 2
 
 // Set state B
 int 0
@@ -289,8 +362,6 @@ byte "energy"
 app_local_get
 callsub split_energy
 
-// if energyA == 0, send back MinTxnFee-
-
 // stack: energyA, energyFee, energyB
 txna Accounts 2 // B
 callsub send_algo
@@ -301,7 +372,7 @@ global MinTxnFee
 global CreatorAddress // Fee
 callsub send_algo
 
-
+// stack: energyA
 txna Accounts 1 // A
 callsub send_algo
 
@@ -393,12 +464,9 @@ pop
 pop
 retsub
 
-// if amount != 0, send asa
 // pops: ... stack, assetId, amount, receiver
 // pushes: none
 send_asa:
-dig 1
-bz send_asa_end_early
 itxn_begin
 int axfer
 itxn_field TypeEnum
@@ -406,11 +474,6 @@ itxn_field AssetReceiver
 itxn_field AssetAmount
 itxn_field XferAsset
 itxn_submit
-retsub
-send_asa_end_early:
-pop
-pop
-pop
 retsub
 
 // given balance, speed and duration, calc energyA, energyFee, energyB
