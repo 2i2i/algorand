@@ -74,12 +74,16 @@ b decline
 
 ////////////////
 // case ASA opt-in
+// needs to be atomic
+// 2nd txn send MinTxnFee + MinASABalanceIncrease (0.001 ALGO + 0.1 ALGO)
 handle_asa_optin:
 
 global GroupSize
 int 2
 ==
 assert
+
+
 
 
 ////////////////
