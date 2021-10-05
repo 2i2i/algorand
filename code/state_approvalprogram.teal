@@ -526,8 +526,8 @@ global CreatorAddress
 txn Sender
 ==
 &&
-
-b approve
+bnz approve
+b decline
 ///////////////
 
 
