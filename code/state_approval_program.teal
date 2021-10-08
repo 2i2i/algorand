@@ -47,7 +47,7 @@ b decline
 
 ////////////////
 // main part of code: NoOp
-// 3 cases each with 2 subcases: lock (algo or asa), unlock (algo or asa), payout_b (algo or asa)
+// 2 cases each with 2 subcases: lock (algo or asa), unlock (algo or asa)
 
 handle_noop:
 
@@ -109,12 +109,12 @@ assert
 
 // Check that state is not set already
 // DEBUG comment out following to test accounts that have "B" set
-// int 0
-// int 0
-// byte "B"
-// app_local_get_ex
-// !
-// assert
+int 0
+int 0
+byte "B"
+app_local_get_ex
+!
+assert
 
 // locking ALGO?
 global GroupSize
