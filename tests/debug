@@ -1,0 +1,17 @@
+goal app update --app-id=$SYSTEM_ID --from=$CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE -w $WALLET
+
+=== lock asa
+goal clerk send --from=$A --to=$SYSTEM_ACCOUNT --amount=$LOCK_AND_OPT_IN_ASA_FEE --out=$TXNS_DIR/lock_algo.txn -w $WALLET
+goal app call --from=$A --app-id=$SYSTEM_ID --app-arg="str:LOCK" --app-arg="addr:$B" --app-arg="int:$SPEED" --app-account=$SYSTEM_ACCOUNT --app-account=$CREATOR --foreign-asset=$ASA --fee=3000 --out=$TXNS_DIR/state.txn -w $WALLET
+goal asset send --assetid=$ASA --from=$A --to=$SYSTEM_ACCOUNT --amount=$ENERGY --out=$TXNS_DIR/lock_asa.txn -w $WALLET
+cat $TXNS_DIR/lock_algo.txn $TXNS_DIR/state.txn $TXNS_DIR/lock_asa.txn > $TXNS_DIR/combinedtransactions.txn
+goal clerk group --infile $TXNS_DIR/combinedtransactions.txn --outfile $TXNS_DIR/groupedtransactions.txn
+goal clerk sign --infile $TXNS_DIR/groupedtransactions.txn --outfile $TXNS_DIR/lock.stxn -w $WALLET
+
+goal clerk dryrun -t $TXNS_DIR/lock.stxn --dryrun-dump -o $TXNS_DIR/dr.json
+tealdbg debug $SYSTEM_APPROVAL_FILE -d $TXNS_DIR/dr.json --group-index 1
+
+=== unlock asa
+goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$A --app-account=$B --app-account=$SYSTEM_ACCOUNT --app-arg="str:UNLOCK" --app-arg="int:$DURATION" --foreign-asset=$ASA --out=$TXNS_DIR/unlock.stxn -w $WALLET
+goal clerk dryrun -t $TXNS_DIR/unlock.stxn --dryrun-dump -o $TXNS_DIR/dr.json
+tealdbg debug $SYSTEM_APPROVAL_FILE -d $TXNS_DIR/dr.json --group-index 0
