@@ -7,7 +7,7 @@
 // scratch "global" usage (this is global within the txn)
 // used to make code shorter
 // 100: energy
-// 101: assetId
+// 101: assetid
 
 ////////////////
 // Handle each possible OnCompletion type. We don't have to worry about
@@ -146,7 +146,7 @@ int 4
 -
 store 100
 
-// Store assetId
+// Store assetid
 gtxn 0 XferAsset // 0
 store 101
 
@@ -193,7 +193,7 @@ gtxn 0 Amount
 assert
 
 // opt-in SYSTEM
-// pops: ... stack, amount, receiver, assetId
+// pops: ... stack, amount, receiver, assetid
 // pushes: none
 int 0
 global CurrentApplicationAddress
@@ -229,7 +229,7 @@ continue_lock:
 gtxn 2 AssetAmount
 store 100
 
-// Store assetId
+// Store assetid
 gtxn 2 XferAsset
 store 101
 
@@ -240,7 +240,7 @@ b approve
 
 ////////////////
 // set state
-// pops: ... stack, assetId
+// pops: ... stack, assetid
 set_state:
 
 // Set state speed
@@ -252,7 +252,7 @@ app_local_put
 
 // Set state energy assetid
 int 0
-byte "assetId"
+byte "assetid"
 load 101
 app_local_put
 
@@ -297,11 +297,11 @@ txna Accounts 2
 ==
 assert
 
-// assetId == 0 <=> ALGO only transfer
-// fail if assetId not set
+// assetid == 0 <=> ALGO only transfer
+// fail if assetid not set
 int 1
 int 0
-byte "assetId"
+byte "assetid"
 app_local_get_ex
 assert
 int 0
@@ -351,9 +351,9 @@ b approve
 // case unlock ASA
 handle_unlock_asa:
 
-// store assetId
+// store assetid
 int 1
-byte "assetId"
+byte "assetid"
 app_local_get
 store 101
 
@@ -374,15 +374,15 @@ callsub split_energy
 // need to add mechanism to resolve this
 // should not occur, but can happen in theory
 txna Accounts 2 // B
-load 101 // assetId
+load 101 // assetid
 asset_holding_get AssetBalance
 bnz pay_B
 bz do_not_pay_B
 pay_B:
 pop // asset_holding_get AssetBalance
 txna Accounts 2 // B
-load 101 // assetId
-// stack: energyA, assetId, B
+load 101 // assetid
+// stack: energyA, assetid, B
 callsub send_asa_non_zero
 b continue_unlock_asa
 do_not_pay_B:
@@ -392,14 +392,14 @@ continue_unlock_asa:
 
 // pay CREATOR
 global CreatorAddress // Fee
-load 101 // assetId
-// stack: energyA, energyFee, assetId, Fee
+load 101 // assetid
+// stack: energyA, energyFee, assetid, Fee
 callsub send_asa_non_zero
 
 // pay A
 txna Accounts 1 // A
-load 101 // assetId
-// stack: energyA, assetId, A
+load 101 // assetid
+// stack: energyA, assetid, A
 callsub send_asa_non_zero
 
 // pay for CREATOR app call fee
@@ -430,7 +430,7 @@ byte "energy"
 app_local_del
 
 int 1
-byte "assetId"
+byte "assetid"
 app_local_del
 
 retsub
@@ -500,7 +500,7 @@ pop
 pop
 retsub
 
-// pops: ... stack, amount, receiver, assetId
+// pops: ... stack, amount, receiver, assetid
 // pushes: none
 send_asa_non_zero:
 dig 2
@@ -513,7 +513,7 @@ pop
 pop
 retsub
 
-// pops: ... stack, amount, receiver, assetId
+// pops: ... stack, amount, receiver, assetid
 // pushes: none
 send_asa:
 itxn_begin
