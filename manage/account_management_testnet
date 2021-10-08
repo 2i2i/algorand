@@ -41,6 +41,7 @@ goal clerk send -a 1000000 -f $CREATOR -t $B -w $WALLET
 // manage state dapp
 goal app create --creator $CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE --global-byteslices 0 --global-ints 0 --local-byteslices 1 --local-ints 4 --extra-pages 0 --on-completion OptIn -w $WALLET
 goal app info --app-id $SYSTEM_ID
+goal clerk send -a 100000 -f $CREATOR -t $SYSTEM_ACCOUNT -w $WALLET
 goal app optin --app-id $SYSTEM_ID --from $A -w $WALLET
 goal app optin --app-id $SYSTEM_ID --from $B -w $WALLET
 goal app update --app-id=$SYSTEM_ID --from=$CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE -w $WALLET

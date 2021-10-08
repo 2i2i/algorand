@@ -1,13 +1,13 @@
 const algosdk = require("algosdk");
 
 const token = '';
-const server = 'https://betanet.algoexplorerapi.io';
+const server = 'https://testnet.algoexplorerapi.io';
 const port = '';
 const client = new algosdk.Algodv2(token, server, port);
 
 const CREATOR_MNEMONIC = ''; // DO NOT ADD TO SOURCE CONTROL
-const SYSTEM_ID = 419713242;
-const SYSTEM_ACCOUNT = 'Y3VM46DMHVME77SI3XEI2KIDJSDZQKSMOSGT55I5YO6UDPKDKUBHYY56AM'; // could calc
+const SYSTEM_ID = 32969536;
+const SYSTEM_ACCOUNT = 'WUTGDFVYFLD7VMPDWOO2KOU2YCKIL4OSY43XSV4SBSDIXCRXIPOHUBBLOI'; // could calc
 
 const MIN_TXN_FEE = 1000;
 const MIN_ASA_BALANCE = 100000;
