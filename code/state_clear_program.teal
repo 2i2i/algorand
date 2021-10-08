@@ -1,0 +1,7 @@
+#pragma version 5
+
+// maybe this should be int 0 to always fail
+// users clearing their state is not good
+// but their own loss
+
+int 1

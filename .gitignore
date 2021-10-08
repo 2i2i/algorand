@@ -5,3 +5,4 @@
 *.sig
 *.json
 splitfiles*
+node_modules
