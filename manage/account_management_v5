@@ -21,7 +21,6 @@ export ASA=430512768
 export LOCK_ALGO_FEE=4000
 export LOCK_ASA_FEE=5000
 export OPT_IN_ASA_FEE=203000
-export LOCK_AND_OPT_IN_ASA_FEE=$(($LOCK_ASA_FEE+$OPT_IN_ASA_FEE))
 export UNLOCK_FEE=1000
 export SPEED=2
 export DURATION=5
@@ -70,7 +69,7 @@ goal account balance -a $B
 goal account info -a $B
 goal app read --app-id=$SYSTEM_ID --local --from=$A
 
-// balances and state only
+// (algo) balances and state only
 echo A
 goal account balance -a $A
 echo B
