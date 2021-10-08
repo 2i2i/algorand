@@ -62,15 +62,6 @@ byte "UNLOCK"
 ==
 bnz handle_unlock
 
-// txna ApplicationArgs 0
-// byte "ASA_OPTIN"
-// ==
-// bnz handle_asa_optin
-
-// txna ApplicationArgs 0
-// byte "PAYOUT_B"
-// ==
-// bnz handle_payout_b
 
 // for debugging, useful to clear state
 // txna ApplicationArgs 0
@@ -81,48 +72,6 @@ bnz handle_unlock
 // Unexpected first arg
 b decline
 ////////////////
-
-// ////////////////
-// // case ASA opt-in
-// // needs to be atomic
-// // 2nd txn send 2*(MinTxnFee + MinASABalanceIncrease) + MinTxnFee
-// // send MinTxnFee + MinASABalanceIncrease to Creator to opt-in
-// // Creator needs to opt-in afterwards (will be done serverside)
-// // since inner txns cannot use smart sig
-// handle_asa_optin:
-
-// // atomic
-// global GroupSize
-// int 2
-// ==
-// assert
-
-// // correct amount
-// global MinTxnFee
-// int 3
-// *
-// int 100000 // MinASABalanceIncrease
-// int 2
-// *
-// +
-// txn Amount
-// ==
-// assert
-
-// // opt-in
-// // pops: ... stack, assetId, amount, receiver
-// // pushes: none
-
-// callsub send_asa
-
-// // send ALGO to Creator for opt-in
-// // pops: ... stack, amount, receiver
-// callsub send_algo
-
-// b approve
-
-////////////////
-
 
 
 ////////////////
