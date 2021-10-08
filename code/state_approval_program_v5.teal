@@ -130,15 +130,34 @@ b decline
 // locks consist of 2 main txns
 // 1. call STATE dapp (to set state)
 // 2. send coins to ESCROW (to lock)
-// in case the coins sent are an ASA, we have a 3rd txn:
+// in case the coins sent are an ASA, we have a 3rd txn (but ordered 2nd):
 // 3. send ALGO to ESCROW to cover unlock fees paid by ESCROW/OWNER
 handle_lock:
 
-// Check that this is the first txn
+// Check that this is the 2nd txn
 txn GroupIndex
+int 1
+==
+assert
+
+// Check that the 1st txn is to our app
+gtxn 0 Receiver
+global CurrentApplicationAddress
+==
+assert
+
+// Check that 1st txn is ALGO
+gtxn 0 XferAsset
 int 0
 ==
 assert
+
+// Check that 1st txn is payment
+gtxn 0 TypeEnum
+int pay
+==
+assert
+
 
 // Check that state is not set already
 // DEBUG comment out following to test accounts that have "B" set
@@ -170,29 +189,17 @@ b decline
 // case lock ALGO
 handle_lock_algo:
 
-// Check that the second txn is to our escrow
-gtxn 1 Receiver
-global CurrentApplicationAddress
-==
-assert
-
-// Check that amount is enough - this is to cover fees to unlock paid by ESCROW
-global MinTxnFee
-int 4
-*
-gtxn 1 Amount
-<
-assert
-
-// Store energy and assetid for use in branch set_state
-// energy stored is amount sent minus txn fees required
-gtxn 1 Amount
+// Store energy
+// fails if energy<0
+gtxn 0 Amount
 global MinTxnFee
 int 4
 *
 -
 store 100
-gtxn 1 XferAsset // 0
+
+// Store assetId
+gtxn 0 XferAsset // 0
 store 101
 
 b set_state
@@ -203,68 +210,79 @@ b set_state
 // lock ASA case
 handle_lock_asa:
 
-// Check that the second txn is to our SYSTEM_ACCOUNT
-gtxn 1 Receiver
-global CurrentApplicationAddress
+// Check that 3rd txn is asset transfer
+gtxn 2 TypeEnum
+int axfer
 ==
 assert
 
-// Check that the third txn is to SYSTEM_ACCOUNT
+// Check that the 3rd txn is to SYSTEM_ACCOUNT
 gtxn 2 AssetReceiver
 global CurrentApplicationAddress
 ==
 assert
-
-// Store energy and assetid for use in branch set_state
-// energy stored is amount sent minus txn fees required
-gtxn 1 Amount
-global MinTxnFee
-int 4
-*
--
-store 100
-gtxn 1 XferAsset // 0
-store 101
 
 // Are we opted-in to the ASA?
 global CurrentApplicationAddress
 gtxn 2 XferAsset
 asset_holding_get AssetBalance
 bz asa_opt_in
-b continue_lock
+bnz no_asa_opt_in
 
 asa_opt_in:
+
+// Check that amount is correct - this is to cover fees to unlock paid by the SYSTEM and to opt-in the SYSTEM
 global MinTxnFee
-int 3
+int 8 // 3 for opt-in, 5 for unlock
 *
 int 100000 // MinASABalanceIncrease
 int 2
 *
 +
-// stack: 
-gtxn 1 Amount
->
+gtxn 0 Amount
+==
 assert
 
-// opt-in
+// opt-in SYSTEM
 // pops: ... stack, assetId, amount, receiver
 // pushes: none
-
+gtxn 2 XferAsset
+int 0
+global CurrentApplicationAddress
 callsub send_asa
 
 // send ALGO to Creator for opt-in
 // pops: ... stack, amount, receiver
+global MinTxnFee
+int 100000
++
+global CreatorAddress 
 callsub send_algo
 
+b continue_lock
 
-continue_lock:
-// Check that amount is enough - this is to cover fees to unlock paid by ESCROW
+no_asa_opt_in:
+
+// Check that amount is correct - this is to cover fees to unlock paid by the SYSTEM
 global MinTxnFee
 int 5
 *
-gtxn 1 Amount
+gtxn 0 Amount
 ==
 assert
+
+b continue_lock
+
+
+continue_lock:
+
+// Store energy
+gtxn 2 AssetAmount
+store 100
+
+// Store assetId
+gtxn 2 XferAsset
+store 101
 
 b set_state
 ////////////////
