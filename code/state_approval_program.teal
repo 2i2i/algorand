@@ -176,7 +176,7 @@ global CurrentApplicationAddress
 gtxn 2 XferAsset
 asset_holding_get AssetBalance
 bz asa_opt_in
-bnz no_asa_opt_in
+b no_asa_opt_in
 
 asa_opt_in:
 
@@ -356,6 +356,7 @@ int 1
 byte "assetid"
 app_local_get
 store 101
+// stack: <empty>
 
 // Split and send energies
 int 1
@@ -374,38 +375,55 @@ callsub split_energy
 // need to add mechanism to resolve this
 // should not occur, but can happen in theory
 txna Accounts 2 // B
+// stack: energyA, energyFee, energyB, B
 load 101 // assetid
+// stack: energyA, energyFee, energyB, B, assetid
 asset_holding_get AssetBalance
+// stack: energyA, energyFee, energyB, AssetBalance, AssetBalanceExists
 bnz pay_B
-bz do_not_pay_B
+// stack: energyA, energyFee, energyB, AssetBalance
+b do_not_pay_B
 pay_B:
+// stack: energyA, energyFee, energyB, AssetBalance
 pop // asset_holding_get AssetBalance
+// stack: energyA, energyFee, energyB
 txna Accounts 2 // B
+// stack: energyA, energyFee, energyB, B
 load 101 // assetid
-// stack: energyA, assetid, B
+// stack: energyA, energyFee, energyB, B, assetid
 callsub send_asa_non_zero
+// stack: energyA, energyFee
 b continue_unlock_asa
 do_not_pay_B:
+// stack: energyA, energyFee, energyB, AssetBalance
+pop // asset_holding_get AssetBalance
+// stack: energyA, energyFee, energyB
 pop // pop energyB
+// stack: energyA, energyFee
 
 continue_unlock_asa:
+// stack: energyA, energyFee
 
 // pay CREATOR
-global CreatorAddress // Fee
+global CreatorAddress // Creator
 load 101 // assetid
-// stack: energyA, energyFee, assetid, Fee
+// stack: energyA, energyFee, Creator, assetid
 callsub send_asa_non_zero
+// stack: energyA
 
 // pay A
 txna Accounts 1 // A
 load 101 // assetid
-// stack: energyA, assetid, A
+// stack: energyA, A, assetid
 callsub send_asa_non_zero
+// stack: <empty>
 
 // pay for CREATOR app call fee
 global MinTxnFee
-global CreatorAddress // Fee
+global CreatorAddress // Creator
+// stack: MinTxnFee, Creator
 callsub send_algo
+// stack: <empty>
 
 // unset state for A
 callsub unset_state
