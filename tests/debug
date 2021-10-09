@@ -1,3 +1,6 @@
+brave://inspect/#devices
+chrome://inspect/#devices
+
 goal app update --app-id=$SYSTEM_ID --from=$CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE -w $WALLET
 
 === lock asa
