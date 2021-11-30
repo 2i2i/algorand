@@ -1,11 +1,19 @@
 const algosdk = require("algosdk");
 
-const token = '';
-const server = 'https://testnet.algoexplorerapi.io';
-const port = '';
-const client = new algosdk.Algodv2(token, server, port);
+const ALGOEXPLORER = {
+  token: '',
+  server: 'https://testnet.algoexplorerapi.io',
+  port: '',
+};
+const LOCAL = {
+  token: '',
+  server: 'http://127.0.0.1',
+  port: '8080',
+};
+const USE = ALGOEXPLORER;
+const client = new algosdk.Algodv2(USE.token, USE.server, USE.port);
 
-const CREATOR_MNEMONIC = ''; // DO NOT ADD TO SOURCE CONTROL
+const CREATOR_MNEMONIC = 'during cost olympic enter remind stage satisfy position dance afraid gym two weird dignity garlic myself alien page sunset waste donate mouse project about soup'; // DO NOT ADD TO SOURCE CONTROL
 const SYSTEM_ID = 32969536;
 const SYSTEM_ACCOUNT = 'WUTGDFVYFLD7VMPDWOO2KOU2YCKIL4OSY43XSV4SBSDIXCRXIPOHUBBLOI'; // could calc
 
@@ -364,6 +372,7 @@ const getAssetHolding = async (algodclient, account, assetid) => {
 const test1 = async (A, B, creator) => {
   // ALGO, all normal
   const testName = 'test1';
+  console.log(testName);
 
   const speed = 2;
   const energy = 100;
@@ -409,6 +418,7 @@ const test1 = async (A, B, creator) => {
 const test2 = async (A, B, creator) => {
   // ALGO, too long duration
   const testName = 'test2';
+  console.log(testName);
 
   const speed = 2;
   const energy = 100;
@@ -454,6 +464,7 @@ const test2 = async (A, B, creator) => {
 const test3 = async (A, B, creator) => {
   // ALGO, zero duration
   const testName = 'test3';
+  console.log(testName);
 
   const speed = 2;
   const energy = 100;
@@ -499,6 +510,7 @@ const test3 = async (A, B, creator) => {
 const test4 = async (A, B, creator) => {
   // ASA, B not opted-in, normal amount
   const testName = 'test4';
+  console.log(testName);
 
   const speed = 2;
   const energy = 100;
@@ -574,6 +586,7 @@ const test4 = async (A, B, creator) => {
 const test5 = async (A, B, creator) => {
   // ASA, all opted-in, normal amount
   const testName = 'test5';
+  console.log(testName);
 
   const speed = 2;
   const energy = 100;
@@ -651,6 +664,7 @@ const test5 = async (A, B, creator) => {
 const test6 = async (A, B, creator) => {
   // ASA, all opted-in, too much amount
   const testName = 'test6';
+  console.log(testName);
 
   const speed = 2;
   const energy = 100;
@@ -728,6 +742,7 @@ const test6 = async (A, B, creator) => {
 const test7 = async (A, B, creator) => {
   // ASA, SYSTEM not opted-in, normal amount
   const testName = 'test7';
+  console.log(testName);
 
   const speed = 2;
   const energy = 100;
@@ -807,6 +822,7 @@ const test7 = async (A, B, creator) => {
 const test8 = async (A, B, creator) => {
   // ASA, SYSTEM and B not opted-in, normal amount
   const testName = 'test8';
+  console.log(testName);
 
   const speed = 2;
   const energy = 100;
