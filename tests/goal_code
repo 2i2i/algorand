@@ -2,8 +2,10 @@
 // ALGO
 
 // step 1: LOCK
+# goal app optin --from=$A --app-id=$SYSTEM_ID --out=$TXNS_DIR/optin.txn -w $WALLET
 goal clerk send --from=$A --to=$SYSTEM_ACCOUNT --amount=$(($LOCK_ALGO_FEE+$ENERGY)) --out=$TXNS_DIR/lock.txn -w $WALLET
 goal app call --from=$A --app-id=$SYSTEM_ID --app-arg="str:LOCK" --app-arg="int:$SPEED" --app-account=$B --out=$TXNS_DIR/state.txn -w $WALLET
+# cat $TXNS_DIR/optin.txn $TXNS_DIR/lock.txn $TXNS_DIR/state.txn > $TXNS_DIR/combinedtransactions.txn
 cat $TXNS_DIR/lock.txn $TXNS_DIR/state.txn > $TXNS_DIR/combinedtransactions.txn
 goal clerk group --infile $TXNS_DIR/combinedtransactions.txn --outfile $TXNS_DIR/groupedtransactions.txn
 goal clerk sign --infile $TXNS_DIR/groupedtransactions.txn --outfile $TXNS_DIR/lock.stxn -w $WALLET
@@ -27,9 +29,11 @@ export LOCK_ASA_TOTAL_FEE=$LOCK_ASA_FEE
 // step 1B: LOCK - OPT IN - A does this
 export LOCK_ASA_TOTAL_FEE=$(($LOCK_ASA_FEE+$OPT_IN_ASA_FEE))
 // step 1: LOCK - A does this
+# goal app optin --from=$A --app-id=$SYSTEM_ID --out=$TXNS_DIR/optin.txn -w $WALLET
 goal clerk send --from=$A --to=$SYSTEM_ACCOUNT --amount=$LOCK_ASA_TOTAL_FEE --out=$TXNS_DIR/lock_algo.txn -w $WALLET
 goal app call --from=$A --app-id=$SYSTEM_ID --app-arg="str:LOCK" --app-arg="int:$SPEED" --app-account=$B --app-account=$SYSTEM_ACCOUNT --app-account=$CREATOR --foreign-asset=$ASA --fee=3000 --out=$TXNS_DIR/state.txn -w $WALLET
 goal asset send --assetid=$ASA --from=$A --to=$SYSTEM_ACCOUNT --amount=$ENERGY --out=$TXNS_DIR/lock_asa.txn -w $WALLET
+# cat $TXNS_DIR/optin.txn $TXNS_DIR/lock_algo.txn $TXNS_DIR/state.txn $TXNS_DIR/lock_asa.txn > $TXNS_DIR/combinedtransactions.txn
 cat $TXNS_DIR/lock_algo.txn $TXNS_DIR/state.txn $TXNS_DIR/lock_asa.txn > $TXNS_DIR/combinedtransactions.txn
 goal clerk group --infile $TXNS_DIR/combinedtransactions.txn --outfile $TXNS_DIR/groupedtransactions.txn
 goal clerk sign --infile $TXNS_DIR/groupedtransactions.txn --outfile $TXNS_DIR/lock.stxn -w $WALLET
