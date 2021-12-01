@@ -8,6 +8,10 @@
 // used to make code shorter
 // 100: energy
 // 101: assetid
+// 102: algo send txn index
+// 103: app call txn index
+// 104: asa send txn index
+// 105: algo lock group size
 
 ////////////////
 // Handle each possible OnCompletion type. We don't have to worry about
@@ -75,33 +79,83 @@ b decline
 
 ////////////////
 // case lock
-// locks consist of 2 main txns
+// locks consist of 2 or 3 (if optin to SYSTEM needed) main txns
 // 1. call STATE dapp (to set state)
 // 2. send coins to ESCROW (to lock)
 // in case the coins sent are an ASA, we have a 3rd txn (but ordered 2nd):
 // 3. send ALGO to ESCROW to cover unlock fees paid by ESCROW/OWNER
 handle_lock:
 
+// Set txn indices depending on whether the 1st is a SYSTEM opt-in or not
+global GroupSize
+int 3
+>=
+gtxn 0 TypeEnum
+int appl
+==
+&&
+gtxn 0 OnCompletion
+int OptIn
+==
+&&
+bnz with_opt_in
+b no_opt_in
+
+with_opt_in:
+// 102: algo send txn index
+int 1
+store 102
+// 103: app call txn index
+int 2
+store 103
+// 104: asa send txn index
+int 3
+store 104
+// 105: algo lock group size
+int 3
+store 105
+b end_system_opt_in_branch
+
+no_opt_in:
+// 102: algo send txn index
+int 0
+store 102
+// 103: app call txn index
+int 1
+store 103
+// 104: asa send txn index
+int 2
+store 104
+// 105: algo lock group size
+int 2
+store 105
+b end_system_opt_in_branch
+
+end_system_opt_in_branch:
+
 // Check that this is the 2nd txn
 txn GroupIndex
-int 1
+load 103
 ==
 assert
 
 // Check that the 1st txn is to our app
-gtxn 0 Receiver
+load 102
+gtxns Receiver
 global CurrentApplicationAddress
 ==
 assert
 
 // Check that 1st txn is ALGO
-gtxn 0 XferAsset
+load 102
+gtxns XferAsset
 int 0
 ==
 assert
 
 // Check that 1st txn is payment
-gtxn 0 TypeEnum
+load 102
+gtxns TypeEnum
 int pay
 ==
 assert
@@ -118,13 +172,15 @@ assert
 
 // locking ALGO?
 global GroupSize
-int 2
+load 105
 ==
 bnz handle_lock_algo
 
 // locking ASA?
 global GroupSize
-int 3
+load 105
+int 1
++
 ==
 bnz handle_lock_asa
 
@@ -139,7 +195,8 @@ handle_lock_algo:
 
 // Store energy
 // fails if energy<0
-gtxn 0 Amount
+load 102
+gtxns Amount
 global MinTxnFee
 int 4
 *
@@ -147,7 +204,8 @@ int 4
 store 100
 
 // Store assetid
-gtxn 0 XferAsset // 0
+load 102
+gtxns XferAsset // 0
 store 101
 
 callsub set_state
@@ -160,20 +218,23 @@ b approve
 handle_lock_asa:
 
 // Check that 3rd txn is asset transfer
-gtxn 2 TypeEnum
+load 104
+gtxns TypeEnum
 int axfer
 ==
 assert
 
 // Check that the 3rd txn is to SYSTEM_ACCOUNT
-gtxn 2 AssetReceiver
+load 104
+gtxns AssetReceiver
 global CurrentApplicationAddress
 ==
 assert
 
 // Are we opted-in to the ASA?
 global CurrentApplicationAddress
-gtxn 2 XferAsset
+load 104
+gtxns XferAsset
 asset_holding_get AssetBalance
 bz asa_opt_in
 b no_asa_opt_in
@@ -188,7 +249,8 @@ int 100000 // MinASABalanceIncrease
 int 2
 *
 +
-gtxn 0 Amount
+load 102
+gtxns Amount
 ==
 assert
 
@@ -197,7 +259,8 @@ assert
 // pushes: none
 int 0
 global CurrentApplicationAddress
-gtxn 2 XferAsset
+load 104
+gtxns XferAsset
 callsub send_asa
 
 // send ALGO to Creator for opt-in
@@ -216,7 +279,8 @@ no_asa_opt_in:
 global MinTxnFee
 int 5
 *
-gtxn 0 Amount
+load 102
+gtxns Amount
 ==
 assert
 
@@ -226,11 +290,13 @@ b continue_lock
 continue_lock:
 
 // Store energy
-gtxn 2 AssetAmount
+load 104
+gtxns AssetAmount
 store 100
 
 // Store assetid
-gtxn 2 XferAsset
+load 104
+gtxns XferAsset
 store 101
 
 callsub set_state
