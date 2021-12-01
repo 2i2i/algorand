@@ -1,4 +1,5 @@
 const algosdk = require("algosdk");
+const fs = require('fs');
 
 const ALGOEXPLORER = {
   token: '',
@@ -6,22 +7,64 @@ const ALGOEXPLORER = {
   port: '',
 };
 const LOCAL = {
-  token: '',
+  token: 'f1500b6cd42919c0ee80b218c0c4c034fcce1554452657050c58c4a39068a663',
   server: 'http://127.0.0.1',
   port: '8080',
 };
-const USE = ALGOEXPLORER;
+const USE = LOCAL;
 const client = new algosdk.Algodv2(USE.token, USE.server, USE.port);
 
-const CREATOR_MNEMONIC = 'during cost olympic enter remind stage satisfy position dance afraid gym two weird dignity garlic myself alien page sunset waste donate mouse project about soup'; // DO NOT ADD TO SOURCE CONTROL
+const CREATOR_MNEMONIC = ''; // DO NOT ADD TO SOURCE CONTROL
 const SYSTEM_ID = 32969536;
 const SYSTEM_ACCOUNT = 'WUTGDFVYFLD7VMPDWOO2KOU2YCKIL4OSY43XSV4SBSDIXCRXIPOHUBBLOI'; // could calc
+const ASSET_ID = 29147319;
 
 const MIN_TXN_FEE = 1000;
 const MIN_ASA_BALANCE = 100000;
 const LOCK_ALGO_FEE = 4 * MIN_TXN_FEE;
 const LOCK_ASA_FEE = 5 * MIN_TXN_FEE;
 const OPT_IN_ASA_FEE = 2 * MIN_ASA_BALANCE + MIN_TXN_FEE + LOCK_ASA_FEE;
+
+// const t = async () => {
+//   const creator = algosdk.mnemonicToSecretKey(CREATOR_MNEMONIC);
+//   const suggestedParams = await client.getTransactionParams().do();
+
+//   const txn1 = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+//     from: creator.addr,
+//     to: creator.addr,
+//     amount: 0,
+//     suggestedParams,
+//   });
+//   const txn2 = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+//     from: creator.addr,
+//     to: creator.addr,
+//     amount: 0,
+//     suggestedParams,
+//   });
+
+//   const txns = [txn1, txn2];
+//   algosdk.assignGroupID(txns);
+//   const txnsSigned = txns.map((tx) => { return tx.signTxn(creator.sk) });
+
+//   download_txns('/Users/imi/Documents/2i2i/algorand/txns/lockASA.stxn', txnsSigned);
+
+//   await Promise.all([]);
+// }
+// t();
+
+const concatTypedArrays = (a, b) => { // a, b TypedArray of same type
+  var c = new (a.constructor)(a.length + b.length);
+  c.set(a, 0);
+  c.set(b, a.length);
+  return c;
+}
+const download_txns = (name, txns) => {
+  let b = new Uint8Array(0);
+  for(const txn in txns){
+      b = concatTypedArrays(b, txns[txn])
+  }
+  fs.appendFileSync(name, Buffer.from(b));
+}
 
 const createAccounts = (creatorMnemonic) => {
   // create CREATOR account
@@ -30,10 +73,12 @@ const createAccounts = (creatorMnemonic) => {
 
   // create A
   const A = algosdk.generateAccount();
+  // const Amnemonic = algosdk.mnemonicFromSeed(A.sk);
   console.log('A', A.addr);
 
   // create B
   const B = algosdk.generateAccount();
+  // const Bmnemonic = algosdk.mnemonicFromSeed(B.sk);
   console.log('B', B.addr);
 
   return {
@@ -59,8 +104,8 @@ const sendAlgo = async (from, to, amount) => {
     return txId;
   }
   catch (e) {
-    console.log('error', e);
-    throw 'e';
+    console.log('error', e.response.body.message);
+    throw e.response.body.message;
   }
 };
 
@@ -81,8 +126,8 @@ const optInApp = async (appIndex, account) => {
     return txId;
   }
   catch (e) {
-    console.log('error', e);
-    throw 'e';
+    console.log('error', e.response.body.message);
+    throw e.response.body.message;
   }
 };
 
@@ -104,8 +149,8 @@ const sendASA = async (assetIndex, from, to, amount) => {
     return txId;
   }
   catch (e) {
-    console.log('error', e);
-    throw 'e';
+    console.log('error', e.response.body.message);
+    throw e.response.body.message;
   }
 };
 const optInASA = (assetIndex, account) => {
@@ -130,8 +175,8 @@ const createAsset = async (creator) => {
     return assetIndex;
   }
   catch (e) {
-    console.log('error', e);
-    throw 'e';
+    console.log('error', e.response.body.message);
+    throw e.response.body.message;
   }
 };
 
@@ -175,14 +220,15 @@ const lockAlgo = async (speed, energy, A, B) => {
   const txns = [txSendAlgoToSystem, txAppCall];
   algosdk.assignGroupID(txns);
   const txnsSigned = txns.map((tx) => { return tx.signTxn(A.sk) });
+
   try {
     const { txId } = await client.sendRawTransaction(txnsSigned).do();
     await waitForConfirmation(client, txId, roundTimeout);
     console.log('Locked ALGO', txId);
   }
   catch (e) {
-    console.log('error', e);
-    throw 'e';
+    console.log('error', e.response.body.message);
+    throw e.response.body.message;
   }
 };
 
@@ -207,8 +253,8 @@ const unlockAlgo = async (duration, A, B, creator) => {
     console.log('Unlocked ALGO', txId);
   }
   catch (e) {
-    console.log('error', e);
-    throw 'e';
+    console.log('error', e.response.body.message);
+    throw e.response.body.message;
   }
 };
 
@@ -256,14 +302,16 @@ const lockASA = async (speed, energy, assetIndex, lockASATotalFee, A, B, creator
   algosdk.assignGroupID(txns);
   const txnsSigned = txns.map((tx) => { return tx.signTxn(A.sk) });
 
+  // download_txns('/Users/imi/Documents/2i2i/algorand/txns/lock.stxn', txnsSigned);
+
   try {
     const { txId } = await client.sendRawTransaction(txnsSigned).do();
     await waitForConfirmation(client, txId, roundTimeout);
     console.log('Locked ASA', txId);
   }
   catch (e) {
-    console.log('error', e);
-    throw 'e';
+    console.log('error', e.response.body.message);
+    throw e.response.body.message;
   }
 };
 
@@ -289,8 +337,8 @@ const unlockASA = async (duration, assetIndex, A, B, creator) => {
     console.log('Unlocked ASA', txId);
   }
   catch (e) {
-    console.log('error', e);
-    throw 'e';
+    console.log('error', e.response.body.message);
+    throw e.response.body.message;
   }
 };
 
@@ -517,29 +565,26 @@ const test4 = async (A, B, creator) => {
   const duration = 5;
   const lockASATotalFee = LOCK_ASA_FEE;
 
-  // existing asset
-  const assetIndex = 430512768;
-
   // opt-in A
-  await optInASA(assetIndex, A);
-  await sendASA(assetIndex, creator, A, 1000);
+  await optInASA(ASSET_ID, A);
+  await sendASA(ASSET_ID, creator, A, 1000);
 
   const before_B_Algo = await getAssetHolding(client, B.addr, 0);
   const before_SYSTEM_Algo = await getAssetHolding(client, SYSTEM_ACCOUNT, 0);
   const before_CREATOR_Algo = await getAssetHolding(client, creator.addr, 0);
-  const before_B_ASA = await getAssetHolding(client, B.addr, assetIndex);
-  const before_SYSTEM_ASA = await getAssetHolding(client, SYSTEM_ACCOUNT, assetIndex);
-  const before_CREATOR_ASA = await getAssetHolding(client, creator.addr, assetIndex);
+  const before_B_ASA = await getAssetHolding(client, B.addr, ASSET_ID);
+  const before_SYSTEM_ASA = await getAssetHolding(client, SYSTEM_ACCOUNT, ASSET_ID);
+  const before_CREATOR_ASA = await getAssetHolding(client, creator.addr, ASSET_ID);
 
-  await lockASA(speed, energy, assetIndex, lockASATotalFee, A, B, creator);
-  await unlockASA(duration, assetIndex, A, B, creator);
+  await lockASA(speed, energy, ASSET_ID, lockASATotalFee, A, B, creator);
+  await unlockASA(duration, ASSET_ID, A, B, creator);
 
   const after_B_Algo = await getAssetHolding(client, B.addr, 0);
   const after_SYSTEM_Algo = await getAssetHolding(client, SYSTEM_ACCOUNT, 0);
   const after_CREATOR_Algo = await getAssetHolding(client, creator.addr, 0);
-  const after_B_ASA = await getAssetHolding(client, B.addr, assetIndex);
-  const after_SYSTEM_ASA = await getAssetHolding(client, SYSTEM_ACCOUNT, assetIndex);
-  const after_CREATOR_ASA = await getAssetHolding(client, creator.addr, assetIndex);
+  const after_B_ASA = await getAssetHolding(client, B.addr, ASSET_ID);
+  const after_SYSTEM_ASA = await getAssetHolding(client, SYSTEM_ACCOUNT, ASSET_ID);
+  const after_CREATOR_ASA = await getAssetHolding(client, creator.addr, ASSET_ID);
 
   console.log(testName, 'before_SYSTEM_Algo, after_SYSTEM_Algo', before_SYSTEM_Algo, after_SYSTEM_Algo);
   console.log(testName, 'before_SYSTEM_ASA, after_SYSTEM_ASA', before_SYSTEM_ASA, after_SYSTEM_ASA);
@@ -593,31 +638,28 @@ const test5 = async (A, B, creator) => {
   const duration = 5;
   const lockASATotalFee = LOCK_ASA_FEE;
 
-  // existing asset
-  const assetIndex = 430512768;
-
   // opt-in A and B - A already opted-in from prev test
-  // const f1 = optInASA(assetIndex, A);
-  await optInASA(assetIndex, B);
+  // const f1 = optInASA(ASSET_ID, A);
+  await optInASA(ASSET_ID, B);
   // await Promise.all([f1, f2]);
-  // await sendASA(assetIndex, creator, A, 1000);
+  // await sendASA(ASSET_ID, creator, A, 1000);
 
   const before_B_Algo = await getAssetHolding(client, B.addr, 0);
   const before_SYSTEM_Algo = await getAssetHolding(client, SYSTEM_ACCOUNT, 0);
   const before_CREATOR_Algo = await getAssetHolding(client, creator.addr, 0);
-  const before_B_ASA = await getAssetHolding(client, B.addr, assetIndex);
-  const before_SYSTEM_ASA = await getAssetHolding(client, SYSTEM_ACCOUNT, assetIndex);
-  const before_CREATOR_ASA = await getAssetHolding(client, creator.addr, assetIndex);
+  const before_B_ASA = await getAssetHolding(client, B.addr, ASSET_ID);
+  const before_SYSTEM_ASA = await getAssetHolding(client, SYSTEM_ACCOUNT, ASSET_ID);
+  const before_CREATOR_ASA = await getAssetHolding(client, creator.addr, ASSET_ID);
 
-  await lockASA(speed, energy, assetIndex, lockASATotalFee, A, B, creator);
-  await unlockASA(duration, assetIndex, A, B, creator);
+  await lockASA(speed, energy, ASSET_ID, lockASATotalFee, A, B, creator);
+  await unlockASA(duration, ASSET_ID, A, B, creator);
 
   const after_B_Algo = await getAssetHolding(client, B.addr, 0);
   const after_SYSTEM_Algo = await getAssetHolding(client, SYSTEM_ACCOUNT, 0);
   const after_CREATOR_Algo = await getAssetHolding(client, creator.addr, 0);
-  const after_B_ASA = await getAssetHolding(client, B.addr, assetIndex);
-  const after_SYSTEM_ASA = await getAssetHolding(client, SYSTEM_ACCOUNT, assetIndex);
-  const after_CREATOR_ASA = await getAssetHolding(client, creator.addr, assetIndex);
+  const after_B_ASA = await getAssetHolding(client, B.addr, ASSET_ID);
+  const after_SYSTEM_ASA = await getAssetHolding(client, SYSTEM_ACCOUNT, ASSET_ID);
+  const after_CREATOR_ASA = await getAssetHolding(client, creator.addr, ASSET_ID);
 
   console.log(testName, 'before_SYSTEM_Algo, after_SYSTEM_Algo', before_SYSTEM_Algo, after_SYSTEM_Algo);
   console.log(testName, 'before_SYSTEM_ASA, after_SYSTEM_ASA', before_SYSTEM_ASA, after_SYSTEM_ASA);
@@ -671,31 +713,28 @@ const test6 = async (A, B, creator) => {
   const duration = 60;
   const lockASATotalFee = LOCK_ASA_FEE;
 
-  // existing asset
-  const assetIndex = 430512768;
-
   // opt-in A and B - already opted-in from prev tests
-  // const f1 = optInASA(assetIndex, A);
-  // const f2 = optInASA(assetIndex, B);
+  // const f1 = optInASA(ASSET_ID, A);
+  // const f2 = optInASA(ASSET_ID, B);
   // await Promise.all([f1, f2]);
-  // await sendASA(assetIndex, creator, A, 1000);
+  // await sendASA(ASSET_ID, creator, A, 1000);
 
   const before_B_Algo = await getAssetHolding(client, B.addr, 0);
   const before_SYSTEM_Algo = await getAssetHolding(client, SYSTEM_ACCOUNT, 0);
   const before_CREATOR_Algo = await getAssetHolding(client, creator.addr, 0);
-  const before_B_ASA = await getAssetHolding(client, B.addr, assetIndex);
-  const before_SYSTEM_ASA = await getAssetHolding(client, SYSTEM_ACCOUNT, assetIndex);
-  const before_CREATOR_ASA = await getAssetHolding(client, creator.addr, assetIndex);
+  const before_B_ASA = await getAssetHolding(client, B.addr, ASSET_ID);
+  const before_SYSTEM_ASA = await getAssetHolding(client, SYSTEM_ACCOUNT, ASSET_ID);
+  const before_CREATOR_ASA = await getAssetHolding(client, creator.addr, ASSET_ID);
 
-  await lockASA(speed, energy, assetIndex, lockASATotalFee, A, B, creator);
-  await unlockASA(duration, assetIndex, A, B, creator);
+  await lockASA(speed, energy, ASSET_ID, lockASATotalFee, A, B, creator);
+  await unlockASA(duration, ASSET_ID, A, B, creator);
 
   const after_B_Algo = await getAssetHolding(client, B.addr, 0);
   const after_SYSTEM_Algo = await getAssetHolding(client, SYSTEM_ACCOUNT, 0);
   const after_CREATOR_Algo = await getAssetHolding(client, creator.addr, 0);
-  const after_B_ASA = await getAssetHolding(client, B.addr, assetIndex);
-  const after_SYSTEM_ASA = await getAssetHolding(client, SYSTEM_ACCOUNT, assetIndex);
-  const after_CREATOR_ASA = await getAssetHolding(client, creator.addr, assetIndex);
+  const after_B_ASA = await getAssetHolding(client, B.addr, ASSET_ID);
+  const after_SYSTEM_ASA = await getAssetHolding(client, SYSTEM_ACCOUNT, ASSET_ID);
+  const after_CREATOR_ASA = await getAssetHolding(client, creator.addr, ASSET_ID);
 
   console.log(testName, 'before_SYSTEM_Algo, after_SYSTEM_Algo', before_SYSTEM_Algo, after_SYSTEM_Algo);
   console.log(testName, 'before_SYSTEM_ASA, after_SYSTEM_ASA', before_SYSTEM_ASA, after_SYSTEM_ASA);
