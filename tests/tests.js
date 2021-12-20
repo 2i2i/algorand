@@ -1,3 +1,5 @@
+// 
+
 const algosdk = require("algosdk");
 const fs = require('fs');
 
@@ -935,17 +937,79 @@ const test8 = async (A, B, creator) => {
   return true;
 };
 
+const test9 = async () => {
+  // ALGO, B empty, amount small
+  const testName = 'test9';
+  console.log(testName);
+
+  const speed = 2;
+  const energy = 100;
+  const duration = 5;
+
+  // new, empty 
+  const creator = algosdk.mnemonicToSecretKey(CREATOR_MNEMONIC);
+  const A = algosdk.generateAccount();
+  const B = algosdk.generateAccount();
+  await sendAlgo(creator, A, 1000000);
+  await optInApp(SYSTEM_ID, A);
+
+  const before_A_Algo = await getAssetHolding(client, A.addr, 0)
+  const before_B_Algo = await getAssetHolding(client, B.addr, 0);
+  const before_SYSTEM_Algo = await getAssetHolding(client, SYSTEM_ACCOUNT, 0);
+  const before_CREATOR_Algo = await getAssetHolding(client, creator.addr, 0);
+
+  await lockAlgo(speed, energy, A, B);
+  await unlockAlgo(duration, A, B, creator);
+
+  const after_A_Algo = await getAssetHolding(client, A.addr, 0)
+  const after_B_Algo = await getAssetHolding(client, B.addr, 0)
+  const after_SYSTEM_Algo = await getAssetHolding(client, SYSTEM_ACCOUNT, 0)
+  const after_CREATOR_Algo = await getAssetHolding(client, creator.addr, 0)
+
+  console.log(testName, 'before_SYSTEM_Algo, after_SYSTEM_Algo', before_SYSTEM_Algo, after_SYSTEM_Algo);
+  console.log(testName, 'before_CREATOR_Algo, after_CREATOR_Algo', before_CREATOR_Algo, after_CREATOR_Algo);
+  console.log(testName, 'before_A_Algo, after_A_Algo', before_A_Algo, after_A_Algo);
+  console.log(testName, 'before_B_Algo, after_B_Algo', before_B_Algo, after_B_Algo);
+
+  if (after_SYSTEM_Algo - before_SYSTEM_Algo === 1009) console.log(testName, 'SYSTEM PASSED');
+  else {
+    console.log(testName, 'SYSTEM FAILED');
+    return false;
+  }
+
+  if (after_CREATOR_Algo - before_CREATOR_Algo === 1) console.log(testName, 'CREATOR PASSED');
+  else {
+    console.log(testName, 'CREATOR FAILED');
+    return false;
+  }
+
+  if (after_A_Algo - before_A_Algo === -6010) console.log(testName, 'A PASSED');
+  else {
+    console.log(testName, 'A FAILED');
+    return false;
+  }
+
+  if (after_B_Algo - before_B_Algo === 0) console.log(testName, 'B PASSED');
+  else {
+    console.log(testName, 'B FAILED');
+    return false;
+  }
+
+  return true;
+};
+
 const run = async () => {
 
-  const { A, B, creator } = await init();
-  if (!await test1(A, B, creator)) return;
-  if (!await test2(A, B, creator)) return;
-  if (!await test3(A, B, creator)) return;
-  if (!await test4(A, B, creator)) return;
-  if (!await test5(A, B, creator)) return;
-  if (!await test6(A, B, creator)) return;
-  if (!await test7(A, B, creator)) return;
-  if (!await test8(A, B, creator)) return;
+  // const { A, B, creator } = await init();
+  // if (!await test1(A, B, creator)) return;
+  // if (!await test2(A, B, creator)) return;
+  // if (!await test3(A, B, creator)) return;
+  // if (!await test4(A, B, creator)) return;
+  // if (!await test5(A, B, creator)) return;
+  // if (!await test6(A, B, creator)) return;
+  // if (!await test7(A, B, creator)) return;
+  // if (!await test8(A, B, creator)) return;
+  if (!await test9()) return;
 
 };
 run();
