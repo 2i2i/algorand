@@ -1,3 +1,4 @@
+// https://developer.algorand.org/docs/run-a-node/setup/install/#sync-node-network-using-fast-catchup
 // local state schema
 assetid: uint64 // 0 if ALGO
 energy: uint64 // total energy locked by A
@@ -73,4 +74,10 @@ goal app read --app-id=$SYSTEM_ID --local --from=$A
 /////////
 // Clear state - not implemented
 # goal app call --from=$A --app-id=$SYSTEM --app-arg="str:CLEAR" -w $WALLET
+
+// empty account
+export EMPTY_ACCOUNT=$B
+goal asset send -a 0 -c $CREATOR -t $CREATOR -f $EMPTY_ACCOUNT --assetid $ASA -w $WALLET
+goal app clear --app-id $SYSTEM_ID -f $EMPTY_ACCOUNT -w $WALLET
+goal clerk send -a 0 -c $CREATOR -t $CREATOR -f $EMPTY_ACCOUNT -w $WALLET
 /////////
