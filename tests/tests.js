@@ -1000,15 +1000,15 @@ const test9 = async () => {
 
 const run = async () => {
 
-  // const { A, B, creator } = await init();
-  // if (!await test1(A, B, creator)) return;
-  // if (!await test2(A, B, creator)) return;
-  // if (!await test3(A, B, creator)) return;
-  // if (!await test4(A, B, creator)) return;
-  // if (!await test5(A, B, creator)) return;
-  // if (!await test6(A, B, creator)) return;
-  // if (!await test7(A, B, creator)) return;
-  // if (!await test8(A, B, creator)) return;
+  const { A, B, creator } = await init();
+  if (!await test1(A, B, creator)) return;
+  if (!await test2(A, B, creator)) return;
+  if (!await test3(A, B, creator)) return;
+  if (!await test4(A, B, creator)) return;
+  if (!await test5(A, B, creator)) return;
+  if (!await test6(A, B, creator)) return;
+  if (!await test7(A, B, creator)) return;
+  if (!await test8(A, B, creator)) return;
   if (!await test9()) return;
 
 };
