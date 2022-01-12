@@ -572,9 +572,9 @@ retsub
 send_algo:
 dig 1 // stack: amount, receiver, amount
 bz send_algo_end_early // stack: amount, receiver
-// if amount < 10000 && balance == 0, do not send (would result in error)
+// if amount < 100000 && balance == 0, do not send (would result in error)
 dig 1 // stack: amount, receiver, amount
-int 10000 // stack: amount, receiver, amount, 10000
+int 100000 // stack: amount, receiver, amount, 10000
 < // stack: amount, receiver, 0/1
 bz send_algo_txn // stack: amount, receiver
 dup // stack: amount, receiver, receiver
