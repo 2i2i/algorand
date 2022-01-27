@@ -2,19 +2,23 @@
 // ALGO
 
 // step 1: LOCK
-# goal app optin --from=$A --app-id=$SYSTEM_ID --out=$TXNS_DIR/optin.txn -w $WALLET
 goal clerk send --from=$A --to=$SYSTEM_ACCOUNT --amount=$(($LOCK_ALGO_FEE+$ENERGY)) --out=$TXNS_DIR/lock.txn -w $WALLET
-goal app call --from=$A --app-id=$SYSTEM_ID --app-arg="str:LOCK" --app-arg="int:$SPEED" --app-account=$B --out=$TXNS_DIR/state.txn -w $WALLET
-# cat $TXNS_DIR/optin.txn $TXNS_DIR/lock.txn $TXNS_DIR/state.txn > $TXNS_DIR/combinedtransactions.txn
+goal app call --from=$A --app-id=$SYSTEM_ID --app-arg="str:LOCK" --out=$TXNS_DIR/state.txn -w $WALLET
 cat $TXNS_DIR/lock.txn $TXNS_DIR/state.txn > $TXNS_DIR/combinedtransactions.txn
 goal clerk group --infile $TXNS_DIR/combinedtransactions.txn --outfile $TXNS_DIR/groupedtransactions.txn
 goal clerk sign --infile $TXNS_DIR/groupedtransactions.txn --outfile $TXNS_DIR/lock.stxn -w $WALLET
 goal clerk rawsend --filename $TXNS_DIR/lock.stxn
 
-// step 2: UNLOCK
-goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --app-arg="int:$DURATION" --out=$TXNS_DIR/unlock.txn -w $WALLET
+// step 2: CANCEL
+goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --app-arg="int:$ENERGY" --app-arg="int:0" --app-arg="int:0" --out=$TXNS_DIR/unlock.txn -w $WALLET
 goal clerk sign --infile $TXNS_DIR/unlock.txn --outfile $TXNS_DIR/unlock.stxn -w $WALLET
 goal clerk rawsend --filename $TXNS_DIR/unlock.stxn
+
+// step 2: UNLOCK
+goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --app-arg="int:$ENERGY_A" --app-arg="int:$ENERGY_FEE" --app-arg="int:$ENERGY_B" --out=$TXNS_DIR/unlock.txn -w $WALLET --fee 1000
+goal clerk sign --infile $TXNS_DIR/unlock.txn --outfile $TXNS_DIR/unlock.stxn -w $WALLET
+goal clerk rawsend --filename $TXNS_DIR/unlock.stxn
+
 
 /////////
 
