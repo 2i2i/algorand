@@ -8,21 +8,20 @@ B: byte // receiver of energy
 
 // set env vars for terminal
 export ALGORAND_DATA="$HOME/node/testnetdata"
-export WALLET=2i2i_testnet_v5
+export WALLET=2i2i
 export CODE_DIR=./code
 export TXNS_DIR=./txns
 export SYSTEM_APPROVAL_FILE=$CODE_DIR/state_approval_program.teal
 export SYSTEM_CLEAR_FILE=$CODE_DIR/state_clear_program.teal
-export CREATOR=KTNEHVYFHJIWSTWZ7SQJSSA24JHTX3KXUABO64ZQTRCBFIM3EMCXVMBD6M
-export A=7AWXRCUDTAUH6SC6PKKHIH5TSRQNPET7QTM2E35OIMW2B5QZ5XJ6U2ZGFU
-export B=TI25CIA3XSYCQKCGUZLBWF5XNZ4BO7GERELKI4KHKVXEPHZF5LA4I47PFI
-export SYSTEM_ID=32969536
-export SYSTEM_ACCOUNT=WUTGDFVYFLD7VMPDWOO2KOU2YCKIL4OSY43XSV4SBSDIXCRXIPOHUBBLOI
+export CREATOR=2I2IXTP67KSNJ5FQXHUJP5WZBX2JTFYEBVTBYFF3UUJ3SQKXSZ3QHZNNPY
+export A=NVVMVMEFGTLIVW3YL6R7ADZAWU66HUBNHI6OH264U5YKVZVPG67EMB5EWM
+export B=VHDMPEWDLWENHMRPH4MJBW6ADTFBRRRZ6UTZT7OXTTIPBUNK3RVKLBRK6A
+export SYSTEM_ID=67119462
+export SYSTEM_ACCOUNT=PANC6WKDNNLXXKVXWPGUVCTYBPVNL66YCIRJELL2CQP4GKKCEIWQHJZCWU
 export ASA=29147319
 export LOCK_ALGO_FEE=4000
 export LOCK_ASA_FEE=5000
 export OPT_IN_ASA_FEE=201000
-export UNLOCK_FEE=1000
 export SPEED=2
 export DURATION=5
 export ENERGY=100
@@ -38,9 +37,10 @@ goal wallet new $WALLET
 goal account new -w $WALLET
 goal clerk send -a 1000000 -f $CREATOR -t $A -w $WALLET
 goal clerk send -a 1000000 -f $CREATOR -t $B -w $WALLET
+goal clerk send -a 100000 -f $CREATOR -t $SYSTEM_ACCOUNT -w $WALLET
 
 // manage state dapp
-goal app create --creator $CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE --global-byteslices 0 --global-ints 0 --local-byteslices 1 --local-ints 4 --extra-pages 0 --on-completion OptIn -w $WALLET
+goal app create --creator $CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE --global-byteslices 0 --global-ints 0 --local-byteslices 0 --local-ints 0 --extra-pages 0 --on-completion OptIn -w $WALLET
 goal app info --app-id $SYSTEM_ID
 goal clerk send -a 100000 -f $CREATOR -t $SYSTEM_ACCOUNT -w $WALLET
 goal app optin --app-id $SYSTEM_ID --from $A -w $WALLET
