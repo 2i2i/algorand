@@ -187,13 +187,17 @@ b decline
 
 
 ///////////////
-// handle closeOut, cannot delete app, no decline, no opt-in
-handle_optin:
+// handle closeOut, cannot delete app, no decline
 handle_closeout:
 handle_deleteapp:
 b decline
 ///////////////
 
+///////////////
+// handle opt-in
+handle_optin:
+b approve
+///////////////
 
 ////////////////
 // subroutines
