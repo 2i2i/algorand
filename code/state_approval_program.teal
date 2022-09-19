@@ -70,7 +70,7 @@ gtxn 0 Receiver
 global CurrentApplicationAddress
 ==
 gtxn 0 Amount
-int 202000
+int 101000
 ==
 txn GroupIndex
 int 1
@@ -86,12 +86,6 @@ int 0
 global CurrentApplicationAddress
 txna Assets 0
 callsub send_asa
-
-// opt in creator, to receive fees - needs delegation - todo
-// int 0
-// global CreatorAddress
-// txna Assets 0
-// callsub send_asa
 
 b approve
 ////////////////
@@ -111,19 +105,11 @@ assert
 // energies
 txna ApplicationArgs 1 // energyA
 btoi
-txna ApplicationArgs 2 // energyFee
-btoi
-txna ApplicationArgs 3 // energyB
+txna ApplicationArgs 2 // energyB
 btoi
 
-// stack: energyA, energyFee, energyB
+// stack: energyA, energyB
 txna Accounts 2 // B
-callsub send
-
-// stack: energyA, energyFee
-// global MinTxnFee
-// +
-global CreatorAddress // Fee
 callsub send
 
 // stack: energyA
