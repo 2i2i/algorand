@@ -8,20 +8,22 @@ B: byte // receiver of energy
 
 // set env vars for terminal
 export ALGORAND_DATA="$HOME/node/testnetdata"
-export WALLET=2i2i
+export WALLET=test
 export CODE_DIR=./code
 export TXNS_DIR=./txns
 export SYSTEM_APPROVAL_FILE=$CODE_DIR/state_approval_program.teal
 export SYSTEM_CLEAR_FILE=$CODE_DIR/state_clear_program.teal
-export CREATOR=2I2IXTP67KSNJ5FQXHUJP5WZBX2JTFYEBVTBYFF3UUJ3SQKXSZ3QHZNNPY
-export A=NVVMVMEFGTLIVW3YL6R7ADZAWU66HUBNHI6OH264U5YKVZVPG67EMB5EWM
-export B=VHDMPEWDLWENHMRPH4MJBW6ADTFBRRRZ6UTZT7OXTTIPBUNK3RVKLBRK6A
-export SYSTEM_ID=67119462
-export SYSTEM_ACCOUNT=PANC6WKDNNLXXKVXWPGUVCTYBPVNL66YCIRJELL2CQP4GKKCEIWQHJZCWU
-export ASA=29147319
-export LOCK_ALGO_FEE=4000
-export LOCK_ASA_FEE=5000
-export OPT_IN_ASA_FEE=201000
+export CREATOR=C7WEF5P2SWYAO3IPWHKMN2DB7BWK4DKCCERVWED27KKVBRQVIAPDHGQWTM
+export A=OBGENRIAZLJKRSTC3CG7PODU6EXVJ76UNTH2XK34T3JCERQWVCFG5POOSA
+export B=FSQ3TYDWRJYMHZYPNDW5JXQXRQYHXBQWCE27OGNXESVYSJ3S7DRSNZ4ZPI
+export SYSTEM_ID=111667318
+export SYSTEM_ACCOUNT=5O6MNB4I3UMCRRT72NGYJQ5EE7HYSKGFTTEOHPMMWA7UK5ASZ2VGHL2GRE
+export ASA=111685565
+export MIN_TXN_FEE=1000
+export LOCK_ALGO_FEE=$(($MIN_TXN_FEE*4))
+export LOCK_ASA_FEE=$(($MIN_TXN_FEE*5))
+export ASA_RESERVE=100000
+export OPT_IN_ASA_FEE=$(($ASA_RESERVE+$MIN_TXN_FEE))
 export SPEED=2
 export DURATION=5
 export ENERGY=100
@@ -35,24 +37,27 @@ goal node status
 goal node end
 goal wallet new $WALLET
 goal account new -w $WALLET
-goal clerk send -a 1000000 -f $CREATOR -t $A -w $WALLET
-goal clerk send -a 1000000 -f $CREATOR -t $B -w $WALLET
+goal clerk send -a 1000000 -f $CREATOR -t $A
+goal clerk send -a 1000000 -f $CREATOR -t $B
 goal clerk send -a 100000 -f $CREATOR -t $SYSTEM_ACCOUNT -w $WALLET
 
 // manage state dapp
-goal app create --creator $CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE --global-byteslices 0 --global-ints 0 --local-byteslices 0 --local-ints 0 --extra-pages 0 --on-completion OptIn -w $WALLET
+goal app create --creator $CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE --global-byteslices 0 --global-ints 0 --local-byteslices 0 --local-ints 0 --on-completion OptIn
 goal app info --app-id $SYSTEM_ID
-goal clerk send -a 100000 -f $CREATOR -t $SYSTEM_ACCOUNT -w $WALLET
-goal app optin --app-id $SYSTEM_ID --from $A -w $WALLET
-goal app optin --app-id $SYSTEM_ID --from $B -w $WALLET
-goal app update --app-id=$SYSTEM_ID --from=$CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE -w $WALLET
+goal clerk send -a 1000000 -f $CREATOR -t $SYSTEM_ACCOUNT
+goal app optin --app-id $SYSTEM_ID --from $A
+goal app optin --app-id $SYSTEM_ID --from $B
+goal app update --app-id=$SYSTEM_ID --from=$CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE
 
 // manage ASA
 // https://developer.algorand.org/docs/reference/cli/goal/asset/send/
-goal asset create --creator $CREATOR --total 1000000000 --unitname NOVALUE --decimals 0 -w $WALLET
-goal asset send -a 0 --assetid $ASA -f $A -t $A -w $WALLET
-goal asset send -a 0 --assetid $ASA -f $B -t $B -w $WALLET
-goal asset send -a 1000 --assetid $ASA -f $CREATOR -t $A -w $WALLET
+goal asset create --creator $A --total 1000000000 --unitname NOVALUE --decimals 0
+goal asset send -a 0 --assetid $ASA -f $A -t $A
+goal asset send -a 0 --assetid $ASA -f $B -t $B
+goal asset send -a 0 --assetid $ASA -f $CREATOR -t $CREATOR
+goal asset send -a 1000 --assetid $ASA -f $CREATOR -t $A
+
+goal asset send -a 0 --assetid $ASA -f $A -t $B
 
 // check values
 echo ASA $ASA
