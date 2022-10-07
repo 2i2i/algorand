@@ -1,4 +1,4 @@
-#pragma version 5
+#pragma version 7
 
 // maybe this should be int 0 to always fail
 // users clearing their state is not good

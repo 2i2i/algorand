@@ -1,7 +1,4 @@
-#pragma version 5
-
-////////////////
-// TODO: can we opt-in CREATOR somehow as well?
+#pragma version 7
 
 ////////////////
 // Handle each possible OnCompletion type. We don't have to worry about
@@ -46,9 +43,9 @@ b decline
 handle_noop:
 
 txna ApplicationArgs 0
-byte "LOCK"
+byte "OPT_IN_ASA"
 ==
-bnz handle_lock
+bnz handle_opt_in_asa
 
 txna ApplicationArgs 0
 byte "UNLOCK"
@@ -61,59 +58,34 @@ b decline
 
 
 ////////////////
-// case lock
-// locks consist of 2 or 3 (if optin to SYSTEM needed) main txns
-// 1. call STATE dapp (to set state)
-// 2. send coins to ESCROW (to lock)
-// in case the coins sent are an ASA, we have a 3rd txn (but ordered 2nd):
-// 3. send ALGO to ESCROW to cover unlock fees paid by ESCROW/OWNER
-handle_lock:
+handle_opt_in_asa:
 
-// Check that this is the 2nd txn
-txn GroupIndex
-int 1
-==
-assert
-
-// Check that the 1st txn is to our app
-int 0
-gtxns Receiver
-global CurrentApplicationAddress
-==
-assert
-
-// Check that 1st txn is ALGO
-int 0
-gtxns XferAsset
-int 0
-==
-assert
-
-// Check that 1st txn is payment
-int 0
-gtxns TypeEnum
-int pay
-==
-assert
-
-// locking ALGO?
 global GroupSize
 int 2
 ==
+gtxn 0 TypeEnum
+int pay
+==
+gtxn 0 Receiver
+global CurrentApplicationAddress
+==
+gtxn 0 Amount
+int 101000
+==
+txn GroupIndex
+int 1
+==
+&&
+&&
+&&
+&&
 assert
 
-b handle_lock_algo
-
-// need to either be locking ALGO or ASA
-// b decline
-////////////////
-
-
-////////////////
-// case lock ALGO
-handle_lock_algo:
-
-// TODO send tokens back to A
+// opt in smart contract
+int 0
+global CurrentApplicationAddress
+txna Assets 0
+callsub send_asa
 
 b approve
 ////////////////
@@ -122,11 +94,6 @@ b approve
 
 ////////////////
 // case unlock
-// call STATE dapp (to check and unset state)
-// unlocks consist of 3 inner txns
-// 1. send coins from ESCROW back to A (unused energy)
-// 2. send coins from ESCROW to FEE (service fee)
-// 3. send coins from ESCROW to B (energy transfer)
 handle_unlock:
 
 // only owner can unlock
@@ -135,34 +102,19 @@ global CreatorAddress
 ==
 assert
 
-b handle_unlock_algo
-
-
-////////////////
-// case unlock ALGO
-handle_unlock_algo:
-
 // energies
 txna ApplicationArgs 1 // energyA
 btoi
-txna ApplicationArgs 2 // energyFee
-btoi
-txna ApplicationArgs 3 // energyB
+txna ApplicationArgs 2 // energyB
 btoi
 
-// stack: energyA, energyFee, energyB
+// stack: energyA, energyB
 txna Accounts 2 // B
-callsub send_algo
-
-// stack: energyA, energyFee
-global MinTxnFee
-+
-global CreatorAddress // Fee
-callsub send_algo
+callsub send
 
 // stack: energyA
 txna Accounts 1 // A
-callsub send_algo
+callsub send
 
 b approve
 ////////////////
@@ -171,7 +123,7 @@ b approve
 
 ///////////////
 // Update only by creator - for now
-// TODO maybe make updating impossible for safety and assurance
+// TODO make updating impossible for safety and assurance later
 handle_updateapp:
 
 global GroupSize
@@ -202,6 +154,14 @@ b approve
 ////////////////
 // subroutines
 
+// pops: ... stack, amount, receiver
+// pushes: none
+send:
+txn NumAssets
+bz send_algo
+txna Assets 0
+b send_asa_non_zero
+
 // if amount != 0, send algo
 // pops: ... stack, amount, receiver
 // pushes: none
@@ -230,6 +190,52 @@ retsub
 send_algo_end_early:
 pop
 pop
+retsub
+
+// pops: ... stack, amount, receiver, assetid
+// pushes: none
+send_asa_non_zero:
+dig 2
+bz send_asa_non_zero_end_early
+callsub send_asa_if_opted_in
+retsub
+send_asa_non_zero_end_early:
+pop
+pop
+pop
+retsub
+
+// pops: ... stack, amount, receiver, assetid
+// pushes: none
+send_asa_if_opted_in:
+
+// check that receiver is opted-in
+dig 1
+dig 1
+asset_holding_get AssetBalance
+bz send_asa_if_opted_in_end_early
+pop
+
+callsub send_asa
+retsub
+
+send_asa_if_opted_in_end_early:
+pop
+pop
+pop
+pop
+retsub
+
+// pops: ... stack, amount, receiver, assetid
+// pushes: none
+send_asa:
+itxn_begin
+int axfer
+itxn_field TypeEnum
+itxn_field XferAsset
+itxn_field AssetReceiver
+itxn_field AssetAmount
+itxn_submit
 retsub
 
 ////////////////
