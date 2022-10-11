@@ -1,0 +1,24 @@
+// LOCK ALGO
+goal clerk send --from=$A --to=$SYSTEM_ACCOUNT --amount=$(($LOCK_ALGO_FEE+$ENERGY))
+
+// UNLOCK ALGO
+goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --app-arg="int:$ENERGY_A" --app-arg="int:$ENERGY_B"
+
+// OPT_IN_ASA
+goal clerk send --from=$A --to=$SYSTEM_ACCOUNT --amount=$OPT_IN_ASA_FEE --out=$TXNS_DIR/opt_in_asa_algo.txn
+goal app call --from=$A --app-id=$SYSTEM_ID --app-arg="str:OPT_IN_ASA" --foreign-asset=$ASA --out=$TXNS_DIR/opt_in_asa_call.txn
+cat $TXNS_DIR/opt_in_asa_algo.txn $TXNS_DIR/opt_in_asa_call.txn > $TXNS_DIR/combinedtransactions.txn
+goal clerk group --infile $TXNS_DIR/combinedtransactions.txn --outfile $TXNS_DIR/groupedtransactions.txn
+goal clerk sign --infile $TXNS_DIR/groupedtransactions.txn --outfile $TXNS_DIR/opt_in_asa.stxn
+goal clerk rawsend --filename $TXNS_DIR/opt_in_asa.stxn
+
+// LOCK ASA
+goal clerk send --from=$A --to=$SYSTEM_ACCOUNT --amount=$LOCK_ASA_FEE --out=$TXNS_DIR/lock_asa_algo.txn
+goal asset send --assetid=$ASA --from=$A --to=$SYSTEM_ACCOUNT --amount=$ENERGY --out=$TXNS_DIR/lock_asa_asa.txn
+cat $TXNS_DIR/lock_asa_algo.txn $TXNS_DIR/lock_asa_asa.txn > $TXNS_DIR/combinedtransactions.txn
+goal clerk group --infile $TXNS_DIR/combinedtransactions.txn --outfile $TXNS_DIR/groupedtransactions.txn
+goal clerk sign --infile $TXNS_DIR/groupedtransactions.txn --outfile $TXNS_DIR/lock_asa.stxn
+goal clerk rawsend --filename $TXNS_DIR/lock_asa.stxn
+
+// UNLOCK ASA
+goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --app-arg="int:$ENERGY_A" --app-arg="int:$ENERGY_B" --foreign-asset=$ASA
