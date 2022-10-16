@@ -22,3 +22,8 @@ goal clerk rawsend --filename $TXNS_DIR/lock_asa.stxn
 
 // UNLOCK ASA
 goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --app-arg="int:$ENERGY_A" --app-arg="int:$ENERGY_B" --foreign-asset=$ASA
+
+// REDEEM ALGO
+goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$B --app-arg="str:REDEEM" --app-arg="int:$ENERGY_B"
+// REDEEM ASA
+goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$B --app-arg="str:REDEEM" --app-arg="int:$ENERGY_B" --foreign-asset=$ASA

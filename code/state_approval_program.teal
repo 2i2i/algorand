@@ -52,6 +52,11 @@ byte "UNLOCK"
 ==
 bnz handle_unlock
 
+txna ApplicationArgs 0
+byte "REDEEM"
+==
+bnz handle_redeem
+
 // Unexpected first arg
 b decline
 ////////////////
@@ -118,6 +123,30 @@ callsub send
 
 b approve
 ////////////////
+
+
+
+///////////////
+handle_redeem:
+
+global GroupSize
+int 1
+==
+global CreatorAddress
+txn Sender
+==
+&&
+assert
+
+txna ApplicationArgs 1
+btoi
+txna Accounts 1
+callsub send
+
+b approve
+///////////////
+
+
 
 
 
