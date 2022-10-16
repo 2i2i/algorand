@@ -49,7 +49,7 @@ goal app info --app-id $SYSTEM_ID
 goal clerk send -a 1000000 -f $CREATOR -t $SYSTEM_ACCOUNT
 goal app optin --app-id $SYSTEM_ID --from $A
 goal app optin --app-id $SYSTEM_ID --from $B
-goal app update --app-id=$SYSTEM_ID --from=$CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE
+goal app update --app-id=$SYSTEM_ID --from=$CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE --out $TXNS_DIR/update.txn
 
 // manage ASA
 // https://developer.algorand.org/docs/reference/cli/goal/asset/send/
