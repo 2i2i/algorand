@@ -1,11 +1,3 @@
-// https://developer.algorand.org/docs/run-a-node/setup/install/#sync-node-network-using-fast-catchup
-// local state schema
-assetid: uint64 // 0 if ALGO
-energy: uint64 // total energy locked by A
-speed: uint64 // speed of energy transfer from A to B
-duration: uint64 // duration of call
-B: byte // receiver of energy
-
 // set env vars for terminal
 export ALGORAND_DATA="$HOME/node/data"
 export WALLET=2i2i
@@ -28,56 +20,3 @@ export ENERGY=100
 export ENERGY_A=90
 export ENERGY_FEE=1
 export ENERGY_B=9
-
-// start goal, create wallet and account
-goal node start
-goal node status
-goal node end
-goal wallet new $WALLET
-goal account new -w $WALLET
-goal clerk send -a 1000000 -f $CREATOR -t $A -w $WALLET
-goal clerk send -a 1000000 -f $CREATOR -t $B -w $WALLET
-goal clerk send -a 100000 -f $CREATOR -t $SYSTEM_ACCOUNT -w $WALLET
-
-// manage state dapp
-goal app create --creator $CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE --global-byteslices 0 --global-ints 0 --local-byteslices 0 --local-ints 0 --extra-pages 0 --on-completion OptIn -w $WALLET
-goal app info --app-id $SYSTEM_ID
-goal clerk send -a 100000 -f $CREATOR -t $SYSTEM_ACCOUNT -w $WALLET
-goal app optin --app-id $SYSTEM_ID --from $A -w $WALLET
-goal app optin --app-id $SYSTEM_ID --from $B -w $WALLET
-goal app update --app-id=$SYSTEM_ID --from=$CREATOR --approval-prog $SYSTEM_APPROVAL_FILE --clear-prog $SYSTEM_CLEAR_FILE -w $WALLET
-
-// manage ASA
-// https://developer.algorand.org/docs/reference/cli/goal/asset/send/
-goal asset create --creator $CREATOR --total 1000000000 --unitname NOVALUE --decimals 0 -w $WALLET
-goal asset send -a 0 --assetid $ASA -f $A -t $A -w $WALLET
-goal asset send -a 0 --assetid $ASA -f $B -t $B -w $WALLET
-goal asset send -a 1000 --assetid $ASA -f $CREATOR -t $A -w $WALLET
-
-// check values
-echo ASA $ASA
-echo SYSTEM_ID $SYSTEM_ID
-echo SYSTEM_ACCOUNT $SYSTEM_ACCOUNT
-goal account balance -a $SYSTEM_ACCOUNT
-goal account info -a $SYSTEM_ACCOUNT
-echo CREATOR $CREATOR
-goal account balance -a $CREATOR
-goal account info -a $CREATOR
-echo A $A
-goal account balance -a $A
-goal account info -a $A
-echo B $B
-goal account balance -a $B
-goal account info -a $B
-goal app read --app-id=$SYSTEM_ID --local --from=$A
-
-/////////
-// Clear state - not implemented
-# goal app call --from=$A --app-id=$SYSTEM --app-arg="str:CLEAR" -w $WALLET
-
-// empty account
-export EMPTY_ACCOUNT=$B
-goal asset send -a 0 -c $CREATOR -t $CREATOR -f $EMPTY_ACCOUNT --assetid $ASA -w $WALLET
-goal app clear --app-id $SYSTEM_ID -f $EMPTY_ACCOUNT -w $WALLET
-goal clerk send -a 0 -c $CREATOR -t $CREATOR -f $EMPTY_ACCOUNT -w $WALLET
-/////////

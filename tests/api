@@ -3,6 +3,7 @@ goal clerk send --from=$A --to=$SYSTEM_ACCOUNT --amount=$(($LOCK_ALGO_FEE+$ENERG
 
 // UNLOCK ALGO
 goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --app-arg="int:$ENERGY_A" --app-arg="int:$ENERGY_B"
+goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$A --app-arg="str:UNLOCK" --app-arg="int:$ENERGY_A"
 
 // OPT_IN_ASA
 goal clerk send --from=$A --to=$SYSTEM_ACCOUNT --amount=$OPT_IN_ASA_FEE --out=$TXNS_DIR/opt_in_asa_algo.txn
@@ -22,8 +23,9 @@ goal clerk rawsend --filename $TXNS_DIR/lock_asa.stxn
 
 // UNLOCK ASA
 goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$A --app-account=$B --app-arg="str:UNLOCK" --app-arg="int:$ENERGY_A" --app-arg="int:$ENERGY_B" --foreign-asset=$ASA
+goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$A --app-arg="str:UNLOCK" --app-arg="int:$ENERGY_A" --foreign-asset=$ASA
 
-// REDEEM ALGO
-goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$B --app-arg="str:REDEEM" --app-arg="int:$ENERGY_B" --out $TXNS_DIR/redeem.txn
-// REDEEM ASA
-goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-account=$B --app-arg="str:REDEEM" --app-arg="int:$ENERGY_B" --foreign-asset=$ASA --out $TXNS_DIR/redeem.txn
+// SIGN AND SEND
+--out ~/Downloads/tmp.txn
+goal clerk sign --signer $SIGNER --infile ~/Downloads/tmp.txn --outfile ~/Downloads/tmp.stxn
+goal clerk rawsend --filename ~/Downloads/tmp.stxn

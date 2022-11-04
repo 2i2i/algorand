@@ -52,11 +52,6 @@ byte "UNLOCK"
 ==
 bnz handle_unlock
 
-txna ApplicationArgs 0
-byte "REDEEM"
-==
-bnz handle_redeem
-
 // Unexpected first arg
 b decline
 ////////////////
@@ -107,44 +102,39 @@ global CreatorAddress
 ==
 assert
 
-// energies
-txna ApplicationArgs 1 // energyA
-btoi
-txna ApplicationArgs 2 // energyB
-btoi
+// send energyA to A
+int 1
+callsub handle_unlock_send_energy
 
-// stack: energyA, energyB
-txna Accounts 2 // B
-callsub send
+// if no B account (B to redeem later), exit
+txn NumAccounts // not incl own
+int 1
+==
+bnz approve
 
-// stack: energyA
-txna Accounts 1 // A
-callsub send
+// send energyB to B
+int 2
+callsub handle_unlock_send_energy
 
 b approve
+
+// stack: index
+handle_unlock_send_energy:
+dup // index
+
+txnas ApplicationArgs // energy[index]
+btoi
+
+swap
+// stack: energy, index
+
+txnas Accounts // receipient[index]
+callsub send
+
+retsub
 ////////////////
 
 
-
-///////////////
-handle_redeem:
-
-global GroupSize
-int 1
-==
-global CreatorAddress
-txn Sender
-==
-&&
-assert
-
-txna ApplicationArgs 1
-btoi
-txna Accounts 1
-callsub send
-
-b approve
-///////////////
 
 
 
