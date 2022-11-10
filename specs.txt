@@ -12,7 +12,7 @@ S -> X (1) is useless [could be added as redeem]
 lock case ALGO: A -> S (energy + 3 * MIN_TXN)
 
     unlock case all_to_A: A <- S (energy + 1 * MIN_TXN) [saved 1 for S -> B]
-    unlock case all_to_B: S -> B ((1-FEE)*energy) [A <- S (1) is useless]
+    unlock case all_to_B: S -> B ((1-FEE)*energy + 1 * MIN_TXN) [A <- S (1) is useless => could S -> B (1)]
     unlock case both: A <- S -> B [no savings]
 
 lock case ASA: A -> S (energy + 3 * MIN_TXN)
@@ -20,6 +20,3 @@ lock case ASA: A -> S (energy + 3 * MIN_TXN)
     unlock case all_to_A: A <- S (energy) [A <- S (1) is useless]
     unlock case all_to_B: S -> B ((1-FEE)*energy) [A <- S (1) is useless]
     unlock case both: A <- S -> B [no savings]
-
-to simplify, always charge 3 * MIN_TXN and no return nothing as only 1/6 cases affected and the benefit is small
-not enough to justify complication at this stage
