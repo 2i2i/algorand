@@ -1,0 +1,9 @@
+for ASA_ID in 31566704 137594422 226701642 724480511 793124631 283820866 300208676 287867876 388592191 27165954 312769 523683256 571576867 747635241 470842789 712012773 818432243 900652777 444035862 744665252 559219992 753137719 403499324 386192725 692432647 913799044 386195940 607591690 511484048
+do
+    goal clerk send --from=$CREATOR --to=$SYSTEM_ACCOUNT --amount=$OPT_IN_ASA_FEE --out=$TXNS_DIR/opt_in_asa_algo.txn
+    goal app call --from=$CREATOR --app-id=$SYSTEM_ID --app-arg="str:OPT_IN_ASA" --foreign-asset=$ASA_ID --out=$TXNS_DIR/opt_in_asa_call.txn
+    cat $TXNS_DIR/opt_in_asa_algo.txn $TXNS_DIR/opt_in_asa_call.txn > $TXNS_DIR/combinedtransactions.txn
+    goal clerk group --infile $TXNS_DIR/combinedtransactions.txn --outfile $TXNS_DIR/groupedtransactions.txn
+    goal clerk sign --signer $SIGNER --infile $TXNS_DIR/groupedtransactions.txn --outfile $TXNS_DIR/opt_in_asa.stxn
+    goal clerk rawsend --filename $TXNS_DIR/opt_in_asa.stxn
+done
